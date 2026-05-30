@@ -1,17 +1,50 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 interface BottomNavProps {
   active: 'feed' | 'liked' | 'creator'
 }
 
 export default function BottomNav({ active }: BottomNavProps) {
+  const [profileName, setProfileName] = useState<string | null>(null)
+  const [loggedIn, setLoggedIn] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    const check = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      setLoggedIn(true)
+      const { data } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (data) setProfileName((data as { name: string }).name)
+    }
+
+    check()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) { setLoggedIn(false); setProfileName(null) }
+      else check()
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const profileHref = loggedIn ? '/creator/dashboard' : '/creator/login'
+
   return (
     <nav
       className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-around pb-safe pb-2 pt-2"
-      style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)' }}
+      style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, transparent 100%)' }}
     >
+      {/* Feed */}
       <Link
         href="/"
         className={`flex flex-col items-center gap-0.5 px-4 py-1 transition-opacity ${
@@ -25,6 +58,7 @@ export default function BottomNav({ active }: BottomNavProps) {
         <span className="text-white text-xs font-medium">Selaa</span>
       </Link>
 
+      {/* Liked */}
       <Link
         href="/liked"
         className={`flex flex-col items-center gap-0.5 px-4 py-1 transition-opacity ${
@@ -40,27 +74,53 @@ export default function BottomNav({ active }: BottomNavProps) {
         </span>
       </Link>
 
+      {/* Profile */}
       <Link
-        href="/creator/login"
+        href={profileHref}
         className={`flex flex-col items-center gap-0.5 px-4 py-1 transition-opacity ${
           active === 'creator' ? 'opacity-100' : 'opacity-50 hover:opacity-80'
         }`}
       >
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center"
-          style={{
-            background: active === 'creator'
-              ? 'linear-gradient(135deg, #F47B8A, #C084FC)'
-              : 'transparent',
-            border: active === 'creator' ? 'none' : '1.5px solid rgba(255,255,255,0.5)',
-          }}
-        >
-          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        </div>
-        <span className="text-white text-xs font-medium">Profiili</span>
+        {loggedIn && profileName ? (
+          /* Logged in with profile — show initials avatar */
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs"
+            style={{
+              background: active === 'creator'
+                ? 'linear-gradient(135deg, #F47B8A, #C084FC)'
+                : 'linear-gradient(135deg, rgba(244,123,138,0.7), rgba(192,132,252,0.7))',
+              outline: active === 'creator' ? '2px solid #F47B8A' : 'none',
+              outlineOffset: '1px',
+            }}
+          >
+            {profileName.charAt(0).toUpperCase()}
+          </div>
+        ) : loggedIn ? (
+          /* Logged in, no profile yet */
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center border"
+            style={{ borderColor: active === 'creator' ? '#F47B8A' : 'rgba(255,255,255,0.5)' }}
+          >
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+        ) : (
+          /* Not logged in */
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center border"
+            style={{ borderColor: active === 'creator' ? '#F47B8A' : 'rgba(255,255,255,0.5)' }}
+          >
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+        )}
+        <span className="text-white text-xs font-medium">
+          {loggedIn ? 'Profiili' : 'Kirjaudu'}
+        </span>
       </Link>
     </nav>
   )

@@ -8,7 +8,7 @@ import Link from 'next/link'
 export default function CreatorLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup'>('signup')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
   const router = useRouter()
@@ -26,7 +26,7 @@ export default function CreatorLoginPage() {
         setMessage(error.message)
       } else {
         setStatus('success')
-        setMessage('Tarkista sähköpostisi vahvistaaksesi tilin.')
+        setMessage('Tarkista sähköpostisi ja klikkaa vahvistuslinkkiä.')
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -45,23 +45,37 @@ export default function CreatorLoginPage() {
       style={{ background: 'linear-gradient(135deg, #FDF2F4 0%, #F3E8FF 100%)' }}>
 
       {/* Logo */}
-      <Link href="/" className="mb-8 flex items-center gap-2">
+      <Link href="/" className="mb-6 flex items-center gap-2">
         <span className="font-bold text-2xl" style={{ color: '#1a1a1a' }}>UGC Suomi</span>
       </Link>
 
+      {/* Free badge — shown only on signup */}
+      {mode === 'signup' && (
+        <div className="flex items-center gap-2 mb-5 px-4 py-2 rounded-full"
+          style={{ background: 'rgba(244,123,138,0.12)', border: '1px solid rgba(244,123,138,0.3)' }}>
+          <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#F47B8A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+          </svg>
+          <span className="text-sm font-semibold" style={{ color: '#E25C6E' }}>
+            Ilmainen profiili — ei luottokorttia
+          </span>
+        </div>
+      )}
+
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">
-          {mode === 'login' ? 'Kirjaudu sisään' : 'Luo tili'}
+          {mode === 'signup' ? 'Luo profiili' : 'Kirjaudu sisään'}
         </h1>
         <p className="text-sm text-gray-500 mb-6">
-          {mode === 'login' ? 'Hallinnoi profiiliasi' : 'Aloita sisällöntuottajana'}
+          {mode === 'signup'
+            ? 'Lisää esittelyvideosi ja tavoita yrityksiä'
+            : 'Hallinnoi profiiliasi ja yhteydenottoja'}
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Sähköposti
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Sähköposti</label>
             <input
               type="email"
               required
@@ -69,22 +83,20 @@ export default function CreatorLoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="sinä@esimerkki.fi"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-pink text-sm"
-              style={{ '--tw-ring-color': '#F47B8A' } as React.CSSProperties}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Salasana
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Salasana</label>
             <input
               type="password"
               required
+              minLength={6}
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-pink text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none text-sm"
             />
           </div>
 
@@ -96,15 +108,37 @@ export default function CreatorLoginPage() {
 
           <button
             type="submit"
-            disabled={status === 'loading'}
+            disabled={status === 'loading' || status === 'success'}
             className="w-full py-3.5 rounded-xl font-bold text-white mt-1 transition-opacity disabled:opacity-60"
             style={{ background: 'linear-gradient(135deg, #F47B8A 0%, #E25C6E 100%)' }}
           >
             {status === 'loading'
               ? 'Ladataan...'
-              : mode === 'login' ? 'Kirjaudu' : 'Luo tili'}
+              : mode === 'signup' ? 'Luo ilmainen profiili' : 'Kirjaudu'}
           </button>
         </form>
+
+        {/* What you get — shown on signup */}
+        {mode === 'signup' && (
+          <div className="mt-5 pt-4 border-t border-gray-100">
+            <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Mitä saat</p>
+            <ul className="flex flex-col gap-1.5">
+              {[
+                'Profiilisivu feedissä (nimi, ikä, kaupunki, bio)',
+                'Esittelyvideo — vaihda milloin tahansa',
+                'Yritykset voivat ottaa sinuun yhteyttä',
+                'Näe kaikki yhteydenotot dashboardilla',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2 text-xs text-gray-500">
+                  <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: '#F47B8A' }} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="mt-5 text-center">
           <button
@@ -116,9 +150,9 @@ export default function CreatorLoginPage() {
             className="text-sm font-medium"
             style={{ color: '#F47B8A' }}
           >
-            {mode === 'login'
-              ? 'Ei tiliä vielä? Rekisteröidy'
-              : 'Onko sinulla jo tili? Kirjaudu'}
+            {mode === 'signup'
+              ? 'Onko sinulla jo tili? Kirjaudu'
+              : 'Ei tiliä? Luo ilmainen profiili'}
           </button>
         </div>
       </div>
