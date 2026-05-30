@@ -1,0 +1,15 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@next_public_supabase_url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@next_public_supabase_anon_key",
+    "CLOUDFLARE_ACCOUNT_ID": "@cloudflare_account_id",
+    "CLOUDFLARE_STREAM_API_TOKEN": "@cloudflare_stream_api_token",
+    "RESEND_API_KEY": "@resend_api_key",
+    "RESEND_FROM_EMAIL": "@resend_from_email",
+    "CONTACT_TO_EMAIL": "@contact_to_email"
+  }
+}
