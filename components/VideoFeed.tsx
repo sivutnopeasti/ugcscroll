@@ -77,7 +77,7 @@ export default function VideoFeed({ initialProfiles }: VideoFeedProps) {
 
   if (profiles.length === 0) {
     return (
-      <div className="h-dvh flex flex-col items-center justify-center bg-black text-white gap-4">
+      <div className="relative h-dvh flex flex-col items-center justify-center bg-black text-white gap-4">
         <div className="w-16 h-16 rounded-full flex items-center justify-center"
           style={{ background: 'rgba(244,123,138,0.2)', border: '1px solid rgba(244,123,138,0.4)' }}>
           <svg className="w-8 h-8" style={{ color: '#F47B8A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,9 +85,17 @@ export default function VideoFeed({ initialProfiles }: VideoFeedProps) {
               d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
         </div>
-        <p className="text-white/60 text-center px-8">
-          Ei vielä sisällöntuottajia. Ole ensimmäinen!
-        </p>
+        <div className="text-center px-8">
+          <p className="text-white/60 mb-4">Ei vielä sisällöntuottajia. Ole ensimmäinen!</p>
+          <a
+            href="/creator/login"
+            className="inline-block px-6 py-3 rounded-full font-bold text-white text-sm"
+            style={{ background: 'linear-gradient(135deg, #F47B8A 0%, #E25C6E 100%)' }}
+          >
+            Luo ilmainen profiili
+          </a>
+        </div>
+        <BottomNav active="feed" />
       </div>
     )
   }
