@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types'
 import Link from 'next/link'
-import { getThumbnailUrl } from '@/lib/cloudflare'
 import BottomNav from '@/components/BottomNav'
 
 const STORAGE_KEY = 'ugc_liked_profiles'
@@ -93,8 +92,7 @@ export default function LikedPage() {
 }
 
 function LikedCard({ profile }: { profile: Profile }) {
-  const thumbnailUrl = profile.video_thumbnail_url ||
-    (profile.cloudflare_video_id ? getThumbnailUrl(profile.cloudflare_video_id) : null)
+  const thumbnailUrl = profile.video_thumbnail_url
 
   return (
     <div className="relative aspect-[9/16] overflow-hidden bg-black">

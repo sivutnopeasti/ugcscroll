@@ -5,7 +5,6 @@ import type { Profile } from '@/lib/types'
 import VideoPlayer from './VideoPlayer'
 import LikeButton from './LikeButton'
 import ContactModal from './ContactModal'
-import { getThumbnailUrl } from '@/lib/cloudflare'
 
 interface VideoCardProps {
   profile: Profile
@@ -16,29 +15,14 @@ interface VideoCardProps {
 
 export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle }: VideoCardProps) {
   const [contactOpen, setContactOpen] = useState(false)
-  const [thumbnailError, setThumbnailError] = useState(false)
-
-  const videoId = profile.cloudflare_video_id!
-
-  const thumbnailUrl = profile.video_thumbnail_url || getThumbnailUrl(videoId)
+  const videoUrl = profile.cloudflare_video_id!
 
   return (
     <div className="video-snap-card">
-      {/* Background thumbnail shown while video loads */}
-      {!thumbnailError && (
-        <img
-          src={thumbnailUrl}
-          alt=""
-          className="video-fill object-cover"
-          style={{ zIndex: 0 }}
-          onError={() => setThumbnailError(true)}
-        />
-      )}
-
       {/* Video */}
       <div style={{ zIndex: 1, position: 'absolute', inset: 0 }}>
         <VideoPlayer
-          videoId={videoId}
+          videoUrl={videoUrl}
           shouldPlay={isActive}
           muted={globalMuted}
         />

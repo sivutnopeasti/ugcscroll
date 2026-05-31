@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import type { Profile, ProfileInsert, ProfileUpdate } from '@/lib/types'
-import { getThumbnailUrl } from '@/lib/cloudflare'
 import Link from 'next/link'
 
 type UploadStage = 'idle' | 'uploading' | 'processing' | 'done' | 'error'
@@ -104,20 +103,20 @@ export default function CreatorDashboard() {
     setUploadError('')
 
     try {
-      const urlRes = await fetch('/api/upload-url', { method: 'POST' })
-      if (!urlRes.ok) throw new Error('Upload URL -haku epäonnistui')
-      const { uploadURL, uid } = await urlRes.json()
-
-      await uploadWithProgress(file, uploadURL, (progress) => setUploadProgress(progress))
-
-      setUploadStage('processing')
-
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Ei kirjautunut')
 
+      const ext = file.name.split('.').pop() ?? 'mp4'
+      const fileName = `${user.id}/${Date.now()}.${ext}`
+
+      // Upload to Supabase Storage with XHR for progress
+      const publicUrl = await uploadToStorage(supabase, file, fileName, (p) => setUploadProgress(p))
+
+      setUploadStage('processing')
+
       const videoUpdate: ProfileUpdate = {
-        cloudflare_video_id: uid,
-        video_thumbnail_url: getThumbnailUrl(uid),
+        cloudflare_video_id: publicUrl,
+        video_thumbnail_url: null,
       }
 
       const { error } = await supabase
@@ -155,9 +154,7 @@ export default function CreatorDashboard() {
     )
   }
 
-  const thumbnailUrl = profile?.cloudflare_video_id
-    ? (profile.video_thumbnail_url || getThumbnailUrl(profile.cloudflare_video_id))
-    : null
+  const videoUrl = profile?.cloudflare_video_id ?? null
 
   return (
     <div className="min-h-dvh pb-12"
@@ -188,12 +185,14 @@ export default function CreatorDashboard() {
         <div className="bg-white rounded-3xl p-5 shadow-sm mb-4">
           <h2 className="font-semibold text-gray-900 mb-3">Esittelyvideo</h2>
 
-          {thumbnailUrl && uploadStage !== 'done' ? (
-            <div className="relative rounded-2xl overflow-hidden mb-4" style={{ aspectRatio: '9/16', maxHeight: 280 }}>
-              <img
-                src={thumbnailUrl}
-                alt="Video thumbnail"
+          {videoUrl && uploadStage !== 'uploading' && uploadStage !== 'processing' ? (
+            <div className="relative rounded-2xl overflow-hidden mb-4 bg-black" style={{ aspectRatio: '9/16', maxHeight: 280 }}>
+              <video
+                src={videoUrl}
                 className="absolute inset-0 w-full h-full object-cover"
+                muted
+                playsInline
+                preload="metadata"
               />
               <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                 <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
@@ -258,7 +257,7 @@ export default function CreatorDashboard() {
             className="w-full py-3 rounded-xl border-2 border-dashed font-medium text-sm transition-colors disabled:opacity-50"
             style={{ borderColor: '#F47B8A', color: '#F47B8A' }}
           >
-            {thumbnailUrl ? 'Vaihda video' : '+ Lisää esittelyvideo'}
+            {videoUrl ? 'Vaihda video' : '+ Lisää esittelyvideo'}
           </button>
           <p className="text-xs text-gray-400 mt-2 text-center">MP4, MOV — max 500 MB, max 5 min</p>
         </div>
@@ -388,28 +387,38 @@ function ContactRequests({ profile }: { profile: Profile | null }) {
   )
 }
 
-async function uploadWithProgress(
+async function uploadToStorage(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   file: File,
-  uploadURL: string,
+  fileName: string,
   onProgress: (p: number) => void
-): Promise<void> {
+): Promise<string> {
   return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        onProgress(Math.round((e.loaded / e.total) * 100))
-      }
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const storageUrl = `${supabaseUrl}/storage/v1/object/videos/${fileName}`
+
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: { access_token: string } | null } }) => {
+      if (!session) { reject(new Error('Ei sessiota')); return }
+
+      const xhr = new XMLHttpRequest()
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+      })
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const publicUrl = `${supabaseUrl}/storage/v1/object/public/videos/${fileName}`
+          resolve(publicUrl)
+        } else {
+          reject(new Error(`Tallennus epäonnistui: ${xhr.status} ${xhr.responseText}`))
+        }
+      })
+      xhr.addEventListener('error', () => reject(new Error('Verkkovirhe ladattaessa')))
+      xhr.open('POST', storageUrl)
+      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`)
+      xhr.setRequestHeader('Content-Type', file.type)
+      xhr.setRequestHeader('x-upsert', 'true')
+      xhr.send(file)
     })
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve()
-      } else {
-        reject(new Error(`HTTP ${xhr.status}`))
-      }
-    })
-    xhr.addEventListener('error', () => reject(new Error('Verkkovirhe ladattaessa')))
-    xhr.open('PUT', uploadURL)
-    xhr.setRequestHeader('Content-Type', file.type)
-    xhr.send(file)
   })
 }
