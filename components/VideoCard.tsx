@@ -109,8 +109,8 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
 
       {/* Bottom profile info — click to expand bio */}
       <button
-        className="absolute bottom-0 left-0 right-14 px-4 pb-6 pt-16 text-left"
-        style={{ zIndex: 10 }}
+        className="absolute bottom-0 left-0 right-14 px-4 pt-16 text-left"
+        style={{ zIndex: 10, paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}
         onClick={() => setBioExpanded((v) => !v)}
         aria-label={bioExpanded ? 'Sulje kuvaus' : 'Avaa kuvaus'}
       >

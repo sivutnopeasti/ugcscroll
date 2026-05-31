@@ -41,8 +41,14 @@ export default function BottomNav({ active }: BottomNavProps) {
 
   return (
     <nav
-      className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-around pb-safe pb-2 pt-2"
-      style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, transparent 100%)' }}
+      className="absolute bottom-0 left-0 right-0 z-30 flex items-center justify-around pt-2"
+      style={{
+        background: 'rgba(0,0,0,0.75)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+        height: '64px',
+      }}
     >
       {/* Feed */}
       <Link
