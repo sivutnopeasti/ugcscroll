@@ -48,22 +48,27 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
     return () => observer.disconnect()
   }, [profiles.length])
 
-  // Load more when near end
+  // Load more when near end — fetch profiles not already shown, shuffle client-side
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return
     setLoading(true)
 
-    const lastProfile = profiles[profiles.length - 1]
+    const shownIds = profiles.map((p) => p.id)
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .not('cloudflare_video_id', 'is', null)
-      .order('created_at', { ascending: false })
-      .lt('created_at', lastProfile.created_at)
+      .not('id', 'in', `(${shownIds.join(',')})`)
       .limit(PAGE_SIZE)
 
     if (!error && data) {
-      setProfiles((prev) => [...prev, ...(data as unknown as Profile[])])
+      // Shuffle the new batch before appending
+      const batch = [...data] as Profile[]
+      for (let i = batch.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[batch[i], batch[j]] = [batch[j], batch[i]]
+      }
+      setProfiles((prev) => [...prev, ...batch])
       setHasMore(data.length === PAGE_SIZE)
     }
     setLoading(false)
