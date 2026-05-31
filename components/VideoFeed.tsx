@@ -10,9 +10,11 @@ const PAGE_SIZE = 8
 
 interface VideoFeedProps {
   initialProfiles: Profile[]
+  hideLogo?: boolean
+  active?: 'feed' | 'liked' | 'creator'
 }
 
-export default function VideoFeed({ initialProfiles }: VideoFeedProps) {
+export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }: VideoFeedProps) {
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles)
   const [activeIndex, setActiveIndex] = useState(0)
   const [globalMuted, setGlobalMuted] = useState(true)
@@ -95,7 +97,7 @@ export default function VideoFeed({ initialProfiles }: VideoFeedProps) {
             Luo ilmainen profiili
           </a>
         </div>
-        <BottomNav active="feed" />
+        <BottomNav active={active} />
       </div>
     )
   }
@@ -103,12 +105,14 @@ export default function VideoFeed({ initialProfiles }: VideoFeedProps) {
   return (
     <div className="relative h-dvh bg-black">
       {/* Top logo bar */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex justify-center pt-safe pt-3 pointer-events-none">
-        <span className="text-white font-bold text-base tracking-wide"
-          style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-          UGC Suomi
-        </span>
-      </div>
+      {!hideLogo && (
+        <div className="absolute top-0 left-0 right-0 z-20 flex justify-center pt-safe pt-3 pointer-events-none">
+          <span className="text-white font-bold text-base tracking-wide"
+            style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+            UGC Suomi
+          </span>
+        </div>
+      )}
 
       {/* Feed */}
       <div ref={containerRef} className="feed-container">
@@ -136,7 +140,7 @@ export default function VideoFeed({ initialProfiles }: VideoFeedProps) {
       </div>
 
       {/* Bottom navigation */}
-      <BottomNav active="feed" />
+      <BottomNav active={active} />
     </div>
   )
 }

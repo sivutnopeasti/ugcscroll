@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { Profile } from '@/lib/types'
-import VideoPlayer from './VideoPlayer'
 import LikeButton from './LikeButton'
 import ContactModal from './ContactModal'
+import Link from 'next/link'
 
 interface VideoCardProps {
   profile: Profile
@@ -14,35 +14,55 @@ interface VideoCardProps {
 }
 
 export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle }: VideoCardProps) {
+  const videoRef = useRef<HTMLVideoElement>(null)
   const [contactOpen, setContactOpen] = useState(false)
+  const [bioExpanded, setBioExpanded] = useState(false)
   const videoUrl = profile.cloudflare_video_id!
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    if (isActive) {
+      video.play().catch(() => {})
+    } else {
+      video.pause()
+      setBioExpanded(false)
+    }
+  }, [isActive])
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (video) video.muted = globalMuted
+  }, [globalMuted])
 
   return (
     <div className="video-snap-card">
       {/* Video */}
-      <div style={{ zIndex: 1, position: 'absolute', inset: 0 }}>
-        <VideoPlayer
-          videoUrl={videoUrl}
-          shouldPlay={isActive}
-          muted={globalMuted}
-        />
-      </div>
+      <video
+        ref={videoRef}
+        className="video-fill"
+        src={videoUrl}
+        loop
+        muted={globalMuted}
+        playsInline
+        preload="metadata"
+      />
 
       {/* Gradient overlay */}
       <div className="video-overlay" style={{ zIndex: 2 }} />
 
-      {/* Tap to toggle mute */}
+      {/* Tap center area to toggle mute */}
       <button
         onClick={onMuteToggle}
-        className="absolute inset-0 w-full h-full"
-        style={{ zIndex: 3, background: 'transparent' }}
+        className="absolute inset-0 w-full"
+        style={{ zIndex: 3, background: 'transparent', bottom: '35%' }}
         aria-label={globalMuted ? 'Poista mykistys' : 'Mykistä'}
       />
 
-      {/* Right-side action buttons (TikTok style) */}
+      {/* Right-side action buttons */}
       <div
-        className="absolute right-3 flex flex-col items-center gap-5 pb-24"
-        style={{ bottom: '4rem', zIndex: 10 }}
+        className="absolute right-3 flex flex-col items-center gap-5"
+        style={{ bottom: '5rem', zIndex: 10 }}
       >
         <LikeButton profileId={profile.id} initialCount={profile.likes_count} />
 
@@ -62,12 +82,10 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
           </span>
         </button>
 
-        {/* Mute indicator */}
         <button
           onClick={onMuteToggle}
           className="flex flex-col items-center gap-1"
           style={{ zIndex: 11 }}
-          aria-label={globalMuted ? 'Poista mykistys' : 'Mykistä'}
         >
           <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
             {globalMuted ? (
@@ -79,7 +97,7 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
             ) : (
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M15.536 8.464a5 5 0 010 7.072M12 6v12M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  d="M15.536 8.464a5 5 0 010 7.072M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
               </svg>
             )}
           </div>
@@ -89,12 +107,14 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
         </button>
       </div>
 
-      {/* Bottom profile info */}
-      <div
-        className="absolute bottom-0 left-0 right-0 px-4 pb-6 pt-16"
+      {/* Bottom profile info — click to expand bio */}
+      <button
+        className="absolute bottom-0 left-0 right-14 px-4 pb-6 pt-16 text-left"
         style={{ zIndex: 10 }}
+        onClick={() => setBioExpanded((v) => !v)}
+        aria-label={bioExpanded ? 'Sulje kuvaus' : 'Avaa kuvaus'}
       >
-        {/* UGC Suomi badge */}
+        {/* Premium badge */}
         <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full mb-2"
           style={{ background: 'rgba(244,123,138,0.9)', backdropFilter: 'blur(4px)' }}>
           <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -103,16 +123,23 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
           <span className="text-white text-xs font-semibold">Premium UGC</span>
         </div>
 
-        <h2 className="text-white font-bold text-xl leading-tight" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
-          {profile.name}
-          {profile.age && (
-            <span className="font-normal text-white/80 text-lg ml-1">{profile.age}</span>
-          )}
-        </h2>
+        {/* Name — clickable to profile */}
+        <Link
+          href={`/profile/${profile.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="block"
+        >
+          <h2 className="text-white font-bold text-xl leading-tight hover:underline" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+            {profile.name}
+            {profile.age && (
+              <span className="font-normal text-white/80 text-lg ml-1">{profile.age}</span>
+            )}
+          </h2>
+        </Link>
 
         {profile.city && (
           <div className="flex items-center gap-1 mt-0.5">
-            <svg className="w-3.5 h-3.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 text-white/70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -123,18 +150,29 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
         )}
 
         {profile.bio && (
-          <p className="text-white/90 text-sm mt-2 line-clamp-2" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+          <p
+            className="text-white/90 text-sm mt-2 transition-all duration-300"
+            style={{
+              textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: bioExpanded ? 'unset' : 2,
+              overflow: bioExpanded ? 'visible' : 'hidden',
+            }}
+          >
             {profile.bio}
           </p>
         )}
-      </div>
 
-      {/* Contact modal */}
+        {profile.bio && profile.bio.length > 80 && (
+          <span className="text-white/50 text-xs mt-1 block">
+            {bioExpanded ? '▲ Sulje' : '▼ Lue lisää'}
+          </span>
+        )}
+      </button>
+
       {contactOpen && (
-        <ContactModal
-          profile={profile}
-          onClose={() => setContactOpen(false)}
-        />
+        <ContactModal profile={profile} onClose={() => setContactOpen(false)} />
       )}
     </div>
   )

@@ -104,11 +104,8 @@ export default function LikeButton({ profileId, initialCount }: LikeButtonProps)
           />
         </svg>
       </div>
-      <span
-        className="text-white text-xs font-semibold tabular-nums"
-        style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}
-      >
-        {count > 999 ? `${(count / 1000).toFixed(1)}k` : count}
+      <span className="text-white text-xs font-medium" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+        Tykkää
       </span>
     </button>
   )
