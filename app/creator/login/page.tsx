@@ -20,7 +20,7 @@ export default function CreatorLoginPage() {
     setMessage('')
 
     if (mode === 'signup') {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -30,7 +30,12 @@ export default function CreatorLoginPage() {
       if (error) {
         setStatus('error')
         setMessage(error.message)
+      } else if (data.session) {
+        // Email confirmation is off — logged in immediately
+        router.push('/creator/dashboard')
+        router.refresh()
       } else {
+        // Email confirmation is on — show message
         setStatus('success')
         setMessage('Tarkista sähköpostisi — klikkaa linkkiä niin pääset suoraan sovellukseen sisään.')
       }
