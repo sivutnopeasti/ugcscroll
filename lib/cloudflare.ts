@@ -27,9 +27,6 @@ export async function createDirectUpload(): Promise<{ uploadURL: string; uid: st
       body: JSON.stringify({
         maxDurationSeconds: 300,
         expiry,
-        meta: { source: 'ugcsuomi' },
-        requireSignedURLs: false,
-        allowedOrigins: ['ugcsuomi.fi', 'ugcscroll.vercel.app', 'localhost:3000'],
       }),
     }
   )
