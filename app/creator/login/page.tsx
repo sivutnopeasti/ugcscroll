@@ -20,13 +20,19 @@ export default function CreatorLoginPage() {
     setMessage('')
 
     if (mode === 'signup') {
-      const { error } = await supabase.auth.signUp({ email, password })
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
       if (error) {
         setStatus('error')
         setMessage(error.message)
       } else {
         setStatus('success')
-        setMessage('Tarkista sähköpostisi ja klikkaa vahvistuslinkkiä.')
+        setMessage('Tarkista sähköpostisi — klikkaa linkkiä niin pääset suoraan sovellukseen sisään.')
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
