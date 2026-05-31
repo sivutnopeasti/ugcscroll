@@ -7,7 +7,11 @@ export async function POST() {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Kirjaudu sisään ensin (Unauthorized)' }, { status: 401 })
+  }
+
+  if (!process.env.CLOUDFLARE_ACCOUNT_ID || !process.env.CLOUDFLARE_STREAM_API_TOKEN) {
+    return NextResponse.json({ error: 'Cloudflare-ympäristömuuttujat puuttuvat palvelimelta' }, { status: 500 })
   }
 
   try {
