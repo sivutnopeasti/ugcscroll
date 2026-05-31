@@ -57,7 +57,6 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('is_premium', true)
       .not('cloudflare_video_id', 'is', null)
       .order('created_at', { ascending: false })
       .lt('created_at', lastProfile.created_at)

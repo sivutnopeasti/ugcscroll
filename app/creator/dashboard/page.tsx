@@ -139,6 +139,35 @@ export default function CreatorDashboard() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  const handleDeleteVideo = async () => {
+    if (!profile?.cloudflare_video_id) return
+    if (!confirm('Poistetaanko video? Se häviää myös feedistä.')) return
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Extract storage path from public URL: .../public/videos/<path>
+      const url = profile.cloudflare_video_id
+      const marker = '/object/public/videos/'
+      const storagePath = url.includes(marker) ? url.split(marker)[1] : null
+
+      if (storagePath) {
+        await supabase.storage.from('videos').remove([storagePath])
+      }
+
+      await supabase
+        .from('profiles')
+        .update({ cloudflare_video_id: null, video_thumbnail_url: null } as never)
+        .eq('user_id', user.id)
+
+      setProfile((prev) => prev ? { ...prev, cloudflare_video_id: null, video_thumbnail_url: null } : prev)
+    } catch (err) {
+      console.error('Video poisto epäonnistui:', err)
+      alert('Videon poisto epäonnistui. Yritä uudelleen.')
+    }
+  }
+
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     router.push('/')
@@ -176,9 +205,9 @@ export default function CreatorDashboard() {
       <div className="px-5 max-w-lg mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Oma profiili</h1>
         <p className="text-sm text-gray-500 mb-6">
-          {profile?.is_premium
-            ? '✓ Premium-tili aktiivinen — profiilisi näkyy feedissä'
-            : 'Premium-tilaus vaaditaan feedinäkyvyyteen'}
+          {profile?.cloudflare_video_id
+            ? '✓ Profiilisi näkyy feedissä'
+            : 'Lisää esittelyvideo niin profiilisi ilmestyy feediin'}
         </p>
 
         {/* Video section */}
@@ -186,21 +215,27 @@ export default function CreatorDashboard() {
           <h2 className="font-semibold text-gray-900 mb-3">Esittelyvideo</h2>
 
           {videoUrl && uploadStage !== 'uploading' && uploadStage !== 'processing' ? (
-            <div className="relative rounded-2xl overflow-hidden mb-4 bg-black" style={{ aspectRatio: '9/16', maxHeight: 280 }}>
-              <video
-                src={videoUrl}
-                className="absolute inset-0 w-full h-full object-cover"
-                muted
-                playsInline
-                preload="metadata"
-              />
-              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
+            <div className="mb-4">
+              <div className="rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '9/16', maxHeight: 320 }}>
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                <video
+                  src={videoUrl}
+                  className="w-full h-full object-cover"
+                  controls
+                  playsInline
+                  preload="metadata"
+                />
               </div>
+              <button
+                onClick={handleDeleteVideo}
+                className="mt-2 w-full py-2 rounded-xl border border-red-200 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Poista video
+              </button>
             </div>
           ) : null}
 
