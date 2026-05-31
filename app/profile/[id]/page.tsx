@@ -26,7 +26,7 @@ export default async function ProfilePage({ params }: Props) {
   const profile = data as unknown as Profile
 
   return (
-    <div className="min-h-dvh bg-black text-white pb-24">
+    <div className="min-h-dvh bg-black text-white" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}>
       {/* Header with video preview */}
       <div className="relative h-64 overflow-hidden">
         {profile.cloudflare_video_id ? (
@@ -102,13 +102,14 @@ export default async function ProfilePage({ params }: Props) {
       {profile.cloudflare_video_id && (
         <div className="px-4 pt-5">
           <h2 className="text-white/50 text-xs uppercase tracking-widest font-semibold mb-3">Video</h2>
-          <div className="rounded-2xl overflow-hidden" style={{ aspectRatio: '9/16', maxHeight: '60vh' }}>
+          <div className="rounded-2xl overflow-hidden w-full" style={{ aspectRatio: '9/16', maxHeight: '65vh' }}>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video
               src={profile.cloudflare_video_id}
               controls
               playsInline
-              className="w-full h-full object-cover"
-              style={{ background: '#111' }}
+              preload="metadata"
+              className="w-full h-full object-cover bg-neutral-900"
             />
           </div>
         </div>

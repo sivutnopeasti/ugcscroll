@@ -19,16 +19,25 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
   const [bioExpanded, setBioExpanded] = useState(false)
   const videoUrl = profile.cloudflare_video_id!
 
+  // React's muted prop is broken — always set via DOM ref
+  const setVideoRef = useCallback((el: HTMLVideoElement | null) => {
+    if (el) {
+      el.muted = globalMuted
+      videoRef.current = el
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
     if (isActive) {
+      video.muted = globalMuted
       video.play().catch(() => {})
     } else {
       video.pause()
       setBioExpanded(false)
     }
-  }, [isActive])
+  }, [isActive]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const video = videoRef.current
@@ -37,15 +46,16 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
 
   return (
     <div className="video-snap-card">
-      {/* Video */}
+      {/* Video — muted set via ref (React muted prop is broken) */}
       <video
-        ref={videoRef}
+        ref={setVideoRef}
         className="video-fill"
         src={videoUrl}
         loop
-        muted={globalMuted}
+        muted
         playsInline
         preload="metadata"
+        x-webkit-airplay="allow"
       />
 
       {/* Gradient overlay */}
