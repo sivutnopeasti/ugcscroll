@@ -33,7 +33,7 @@ export async function createDirectUpload(): Promise<{ uploadURL: string; uid: st
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`Cloudflare upload URL creation failed: ${err}`)
+    throw new Error(`Cloudflare ${res.status}: ${err}`)
   }
 
   const json = await res.json()

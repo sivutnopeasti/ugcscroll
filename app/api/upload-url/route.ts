@@ -19,6 +19,7 @@ export async function POST() {
     return NextResponse.json({ uploadURL, uid })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Upload URL creation failed'
+    console.error('upload-url error:', message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
