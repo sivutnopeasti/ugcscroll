@@ -129,9 +129,25 @@ export async function POST(req: NextRequest) {
     }
 
     case 'invoice.payment_succeeded': {
-      // Renewal — keep premium active (already true, just a no-op log)
+      // Renewal — keep premium active
       const invoice = event.data.object as Stripe.Invoice
       console.log('Invoice paid — subscription renewed for customer', invoice.customer)
+      if (invoice.customer) {
+        await setPremium(invoice.customer as string, undefined, undefined, true)
+      }
+      break
+    }
+
+    // Stripe v2 API: invoice_payment.paid (newer API version)
+    case 'invoice_payment.paid': {
+      const invoicePayment = event.data.object as { invoice: string; status: string }
+      console.log('invoice_payment.paid received — fetching invoice to resolve customer')
+      if (invoicePayment.invoice) {
+        const fullInvoice = await stripe.invoices.retrieve(invoicePayment.invoice)
+        if (fullInvoice.customer) {
+          await setPremium(fullInvoice.customer as string, undefined, undefined, true)
+        }
+      }
       break
     }
 
