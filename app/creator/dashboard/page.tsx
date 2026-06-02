@@ -2,11 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { Profile, ProfileInsert, ProfileUpdate } from '@/lib/types'
+import { getThumbnailUrl } from '@/lib/cloudflare'
 import Link from 'next/link'
 
 type UploadStage = 'idle' | 'uploading' | 'processing' | 'done' | 'error'
+
+// Resolve thumbnail: CF Stream or fallback for Supabase legacy URLs
+function resolveThumbnail(videoId: string): string | null {
+  if (!videoId) return null
+  if (videoId.startsWith('https://')) return null   // legacy Supabase Storage — no auto-thumb
+  return getThumbnailUrl(videoId)
+}
 
 export default function CreatorDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -15,9 +23,11 @@ export default function CreatorDashboard() {
   const [uploadStage, setUploadStage] = useState<UploadStage>('idle')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadError, setUploadError] = useState('')
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
@@ -57,21 +67,10 @@ export default function CreatorDashboard() {
     let error
 
     if (profile) {
-      const update: ProfileUpdate = {
-        name: form.name,
-        age,
-        city: form.city || null,
-        bio: form.bio || null,
-      }
+      const update: ProfileUpdate = { name: form.name, age, city: form.city || null, bio: form.bio || null }
       ;({ error } = await supabase.from('profiles').update(update as never).eq('user_id', user.id))
     } else {
-      const insert: ProfileInsert = {
-        user_id: user.id,
-        name: form.name,
-        age,
-        city: form.city || null,
-        bio: form.bio || null,
-      }
+      const insert: ProfileInsert = { user_id: user.id, name: form.name, age, city: form.city || null, bio: form.bio || null }
       ;({ error } = await supabase.from('profiles').insert(insert as never))
     }
 
@@ -103,34 +102,34 @@ export default function CreatorDashboard() {
     setUploadError('')
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Ei kirjautunut')
+      // Step 1: Get Cloudflare Direct Upload URL
+      const urlRes = await fetch('/api/upload-url', { method: 'POST' })
+      if (!urlRes.ok) {
+        const err = await urlRes.json().catch(() => ({}))
+        throw new Error(err.error ?? `Upload URL haku epäonnistui (${urlRes.status})`)
+      }
+      const { uploadURL, uid } = await urlRes.json()
 
-      const ext = file.name.split('.').pop() ?? 'mp4'
-      const fileName = `${user.id}/${Date.now()}.${ext}`
-
-      // Upload to Supabase Storage with XHR for progress
-      const publicUrl = await uploadToStorage(supabase, file, fileName, (p) => setUploadProgress(p))
+      // Step 2: Upload directly to Cloudflare Stream
+      await uploadToCF(file, uploadURL, (p) => setUploadProgress(p))
 
       setUploadStage('processing')
 
-      const videoUpdate: ProfileUpdate = {
-        cloudflare_video_id: publicUrl,
-        video_thumbnail_url: null,
-      }
-
+      // Step 3: Save CF video UID to profile
+      const videoUpdate: ProfileUpdate = { cloudflare_video_id: uid, video_thumbnail_url: null }
       const { error } = await supabase
         .from('profiles')
         .update(videoUpdate as never)
-        .eq('user_id', user.id)
+        .eq('user_id', (await supabase.auth.getUser()).data.user!.id)
 
       if (error) throw error
 
-      const { data } = await supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle()
+      const { data } = await supabase.from('profiles').select('*')
+        .eq('user_id', (await supabase.auth.getUser()).data.user!.id).maybeSingle()
       if (data) setProfile(data as unknown as Profile)
 
       setUploadStage('done')
-      setTimeout(() => setUploadStage('idle'), 3000)
+      setTimeout(() => setUploadStage('idle'), 4000)
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Lähetys epäonnistui')
       setUploadStage('error')
@@ -143,28 +142,47 @@ export default function CreatorDashboard() {
     if (!profile?.cloudflare_video_id) return
     if (!confirm('Poistetaanko video? Se häviää myös feedistä.')) return
 
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // Delete from CF Stream if it's a UID (not a legacy Supabase URL)
+    const videoId = profile.cloudflare_video_id
+    if (!videoId.startsWith('https://')) {
+      await fetch(`/api/delete-video?uid=${encodeURIComponent(videoId)}`, { method: 'DELETE' })
+        .catch((err) => console.warn('CF delete failed:', err))
+    }
+
+    await supabase
+      .from('profiles')
+      .update({ cloudflare_video_id: null, video_thumbnail_url: null } as never)
+      .eq('user_id', user.id)
+
+    setProfile((prev) => prev ? { ...prev, cloudflare_video_id: null, video_thumbnail_url: null } : prev)
+  }
+
+  const handleBuyPremium = async () => {
+    setCheckoutLoading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // Extract storage path from public URL: .../public/videos/<path>
-      const url = profile.cloudflare_video_id
-      const marker = '/object/public/videos/'
-      const storagePath = url.includes(marker) ? url.split(marker)[1] : null
-
-      if (storagePath) {
-        await supabase.storage.from('videos').remove([storagePath])
-      }
-
-      await supabase
-        .from('profiles')
-        .update({ cloudflare_video_id: null, video_thumbnail_url: null } as never)
-        .eq('user_id', user.id)
-
-      setProfile((prev) => prev ? { ...prev, cloudflare_video_id: null, video_thumbnail_url: null } : prev)
+      const res = await fetch('/api/checkout', { method: 'POST' })
+      if (!res.ok) throw new Error('Checkout epäonnistui')
+      const { url } = await res.json()
+      window.location.href = url
     } catch (err) {
-      console.error('Video poisto epäonnistui:', err)
-      alert('Videon poisto epäonnistui. Yritä uudelleen.')
+      alert(err instanceof Error ? err.message : 'Virhe kassalla')
+      setCheckoutLoading(false)
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    setCheckoutLoading(true)
+    try {
+      const res = await fetch('/api/customer-portal', { method: 'POST' })
+      if (!res.ok) throw new Error('Portaali epäonnistui')
+      const { url } = await res.json()
+      window.location.href = url
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Virhe portaalissa')
+      setCheckoutLoading(false)
     }
   }
 
@@ -183,7 +201,10 @@ export default function CreatorDashboard() {
     )
   }
 
-  const videoUrl = profile?.cloudflare_video_id ?? null
+  const videoId = profile?.cloudflare_video_id ?? null
+  const thumbnailUrl = videoId ? resolveThumbnail(videoId) : null
+  const isPremium = profile?.is_premium ?? false
+  const subscriptionSuccess = searchParams.get('subscription') === 'success'
 
   return (
     <div className="min-h-dvh pb-12"
@@ -194,110 +215,172 @@ export default function CreatorDashboard() {
         <Link href="/" className="flex items-center gap-2">
           <span className="font-bold text-xl text-gray-900">UGC Suomi</span>
         </Link>
-        <button
-          onClick={handleSignOut}
-          className="text-sm font-medium text-gray-500 hover:text-gray-700"
-        >
+        <button onClick={handleSignOut} className="text-sm font-medium text-gray-500 hover:text-gray-700">
           Kirjaudu ulos
         </button>
       </div>
 
       <div className="px-5 max-w-lg mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Oma profiili</h1>
+
+        {/* Status line */}
         <p className="text-sm text-gray-500 mb-6">
-          {profile?.cloudflare_video_id
-            ? '✓ Profiilisi näkyy feedissä'
-            : 'Lisää esittelyvideo niin profiilisi ilmestyy feediin'}
+          {isPremium
+            ? videoId
+              ? '✓ Premium — profiilisi näkyy feedissä'
+              : '✓ Premium — lisää video niin pääset feediin'
+            : 'Tilaa Premium näkyäksesi UGC-feedissä'}
         </p>
 
-        {/* Video section */}
-        <div className="bg-white rounded-3xl p-5 shadow-sm mb-4">
-          <h2 className="font-semibold text-gray-900 mb-3">Esittelyvideo</h2>
+        {/* Stripe subscription success banner */}
+        {subscriptionSuccess && (
+          <div className="mb-4 p-4 rounded-2xl bg-green-50 border border-green-200 flex items-center gap-3">
+            <svg className="w-6 h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="font-semibold text-green-800 text-sm">Premium aktivoitu!</p>
+              <p className="text-green-700 text-xs mt-0.5">Lataa nyt esittelyvideo niin profiilisi ilmestyy feediin.</p>
+            </div>
+          </div>
+        )}
 
-          {videoUrl && uploadStage !== 'uploading' && uploadStage !== 'processing' ? (
-            <div className="mb-4">
-              <div className="rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '9/16', maxHeight: 320 }}>
-                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                <video
-                  src={videoUrl}
-                  className="w-full h-full object-cover"
-                  controls
-                  playsInline
-                  preload="metadata"
-                />
+        {/* ── PREMIUM SUBSCRIPTION SECTION ── */}
+        <div className="bg-white rounded-3xl p-5 shadow-sm mb-4">
+          {isPremium ? (
+            /* Active premium */
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-semibold text-gray-900">Premium-tilaus</h2>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                  style={{ background: 'rgba(244,123,138,0.12)', color: '#E25C6E' }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                  Aktiivinen
+                </span>
               </div>
+              <p className="text-sm text-gray-500 mb-4">
+                Profiilisi näkyy feedissä niin kauan kuin tilaus on voimassa.
+              </p>
               <button
-                onClick={handleDeleteVideo}
-                className="mt-2 w-full py-2 rounded-xl border border-red-200 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
+                onClick={handleManageSubscription}
+                disabled={checkoutLoading}
+                className="w-full py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Poista video
+                {checkoutLoading ? 'Ohjataan...' : 'Hallitse tilausta / peruuta'}
               </button>
             </div>
-          ) : null}
-
-          {(uploadStage === 'uploading' || uploadStage === 'processing') && (
-            <div className="mb-4 p-4 rounded-2xl bg-gray-50">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">
-                  {uploadStage === 'uploading' ? 'Ladataan videota...' : 'Cloudflare käsittelee videota...'}
-                </span>
-                {uploadStage === 'uploading' && (
-                  <span className="text-sm text-gray-500">{uploadProgress}%</span>
-                )}
-              </div>
-              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                {uploadStage === 'uploading' ? (
-                  <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%`, background: 'linear-gradient(90deg, #F47B8A, #C084FC)' }}
-                  />
-                ) : (
-                  <div
-                    className="h-full rounded-full animate-pulse"
-                    style={{ width: '100%', background: 'linear-gradient(90deg, #F47B8A, #C084FC)' }}
-                  />
-                )}
-              </div>
+          ) : (
+            /* Upsell */
+            <div>
+              <h2 className="font-semibold text-gray-900 mb-1">Tilaa Premium</h2>
+              <p className="text-sm text-gray-500 mb-3">
+                Osta kuukausitilaus ja pääse UGC-feediin yritysten löydettäväksi.
+              </p>
+              <ul className="text-sm text-gray-600 mb-4 space-y-1.5">
+                {['Näyt UGC-feedissä yrityksille', 'Lataa esittelyvideo', 'Vastaanota yhteydenottoja', 'Peruutettavissa milloin tahansa'].map((f) => (
+                  <li key={f} className="flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#F47B8A' }} fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={handleBuyPremium}
+                disabled={checkoutLoading}
+                className="w-full py-3.5 rounded-xl font-bold text-white transition-opacity disabled:opacity-60"
+                style={{ background: 'linear-gradient(135deg, #F47B8A 0%, #C084FC 100%)' }}
+              >
+                {checkoutLoading ? 'Ohjataan kassalle...' : 'Osta Premium →'}
+              </button>
             </div>
           )}
-
-          {uploadStage === 'done' && (
-            <div className="mb-4 p-3 rounded-2xl bg-green-50 flex items-center gap-2">
-              <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-sm text-green-700 font-medium">Video ladattu onnistuneesti!</span>
-            </div>
-          )}
-
-          {uploadError && (
-            <p className="mb-3 text-sm text-red-500">{uploadError}</p>
-          )}
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="video/*"
-            className="hidden"
-            onChange={handleVideoSelect}
-          />
-
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadStage === 'uploading' || uploadStage === 'processing'}
-            className="w-full py-3 rounded-xl border-2 border-dashed font-medium text-sm transition-colors disabled:opacity-50"
-            style={{ borderColor: '#F47B8A', color: '#F47B8A' }}
-          >
-            {videoUrl ? 'Vaihda video' : '+ Lisää esittelyvideo'}
-          </button>
-          <p className="text-xs text-gray-400 mt-2 text-center">MP4, MOV — max 500 MB, max 5 min</p>
         </div>
 
-        {/* Profile form */}
+        {/* ── VIDEO SECTION (premium only) ── */}
+        {isPremium && (
+          <div className="bg-white rounded-3xl p-5 shadow-sm mb-4">
+            <h2 className="font-semibold text-gray-900 mb-3">Esittelyvideo</h2>
+
+            {videoId && uploadStage !== 'uploading' && uploadStage !== 'processing' && (
+              <div className="mb-4">
+                <div className="rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '9/16', maxHeight: 320 }}>
+                  {thumbnailUrl ? (
+                    /* Show CF thumbnail while processing / as preview */
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={thumbnailUrl} alt="Video thumbnail" className="w-full h-full object-cover" />
+                  ) : (
+                    /* Legacy Supabase URL — use native video */
+                    // eslint-disable-next-line jsx-a11y/media-has-caption
+                    <video src={videoId} className="w-full h-full object-cover" controls playsInline preload="metadata" />
+                  )}
+                </div>
+                <button
+                  onClick={handleDeleteVideo}
+                  className="mt-2 w-full py-2 rounded-xl border border-red-200 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Poista video
+                </button>
+              </div>
+            )}
+
+            {(uploadStage === 'uploading' || uploadStage === 'processing') && (
+              <div className="mb-4 p-4 rounded-2xl bg-gray-50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    {uploadStage === 'uploading' ? 'Ladataan Cloudflare Streamiin...' : 'Cloudflare käsittelee videota...'}
+                  </span>
+                  {uploadStage === 'uploading' && (
+                    <span className="text-sm text-gray-500">{uploadProgress}%</span>
+                  )}
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  {uploadStage === 'uploading' ? (
+                    <div className="h-full rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%`, background: 'linear-gradient(90deg, #F47B8A, #C084FC)' }} />
+                  ) : (
+                    <div className="h-full rounded-full animate-pulse"
+                      style={{ width: '100%', background: 'linear-gradient(90deg, #F47B8A, #C084FC)' }} />
+                  )}
+                </div>
+                {uploadStage === 'processing' && (
+                  <p className="text-xs text-gray-400 mt-2">Video ilmestyy feediin muutaman minuutin kuluttua.</p>
+                )}
+              </div>
+            )}
+
+            {uploadStage === 'done' && (
+              <div className="mb-4 p-3 rounded-2xl bg-green-50 flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-green-700 font-medium">Video lähetetty Cloudflare Streamiin!</span>
+              </div>
+            )}
+
+            {uploadError && (
+              <p className="mb-3 text-sm text-red-500">{uploadError}</p>
+            )}
+
+            <input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoSelect} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadStage === 'uploading' || uploadStage === 'processing'}
+              className="w-full py-3 rounded-xl border-2 border-dashed font-medium text-sm transition-colors disabled:opacity-50"
+              style={{ borderColor: '#F47B8A', color: '#F47B8A' }}
+            >
+              {videoId ? 'Vaihda video' : '+ Lisää esittelyvideo'}
+            </button>
+            <p className="text-xs text-gray-400 mt-2 text-center">MP4, MOV — max 500 MB, max 5 min</p>
+          </div>
+        )}
+
+        {/* ── PROFILE FORM ── */}
         <div className="bg-white rounded-3xl p-5 shadow-sm">
           <h2 className="font-semibold text-gray-900 mb-4">Perustiedot</h2>
 
@@ -392,9 +475,7 @@ function ContactRequests({ profile }: { profile: Profile | null }) {
 
   return (
     <div className="bg-white rounded-3xl p-5 shadow-sm mt-4">
-      <h2 className="font-semibold text-gray-900 mb-4">
-        Yhteydenotot ({requests.length})
-      </h2>
+      <h2 className="font-semibold text-gray-900 mb-4">Yhteydenotot ({requests.length})</h2>
       <div className="flex flex-col gap-3">
         {requests.map((req) => (
           <div key={req.id} className="p-4 rounded-2xl bg-gray-50">
@@ -422,38 +503,25 @@ function ContactRequests({ profile }: { profile: Profile | null }) {
   )
 }
 
-async function uploadToStorage(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  file: File,
-  fileName: string,
-  onProgress: (p: number) => void
-): Promise<string> {
+// Upload file to Cloudflare Stream Direct Upload URL with progress tracking
+async function uploadToCF(file: File, uploadURL: string, onProgress: (p: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const storageUrl = `${supabaseUrl}/storage/v1/object/videos/${fileName}`
+    const formData = new FormData()
+    formData.append('file', file)
 
-    supabase.auth.getSession().then(({ data: { session } }: { data: { session: { access_token: string } | null } }) => {
-      if (!session) { reject(new Error('Ei sessiota')); return }
-
-      const xhr = new XMLHttpRequest()
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
-      })
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const publicUrl = `${supabaseUrl}/storage/v1/object/public/videos/${fileName}`
-          resolve(publicUrl)
-        } else {
-          reject(new Error(`Tallennus epäonnistui: ${xhr.status} ${xhr.responseText}`))
-        }
-      })
-      xhr.addEventListener('error', () => reject(new Error('Verkkovirhe ladattaessa')))
-      xhr.open('POST', storageUrl)
-      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`)
-      xhr.setRequestHeader('Content-Type', file.type)
-      xhr.setRequestHeader('x-upsert', 'true')
-      xhr.send(file)
+    const xhr = new XMLHttpRequest()
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
     })
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve()
+      } else {
+        reject(new Error(`Cloudflare upload epäonnistui: ${xhr.status}`))
+      }
+    })
+    xhr.addEventListener('error', () => reject(new Error('Verkkovirhe ladattaessa')))
+    xhr.open('POST', uploadURL)
+    xhr.send(formData)
   })
 }

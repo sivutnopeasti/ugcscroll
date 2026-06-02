@@ -4,6 +4,17 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
 import ContactButton from '@/components/ContactButton'
+import { getHlsUrl, getThumbnailUrl } from '@/lib/cloudflare'
+
+function resolveVideoUrl(videoId: string): string {
+  if (videoId.startsWith('https://')) return videoId
+  return getHlsUrl(videoId)
+}
+
+function resolveThumbnailUrl(videoId: string): string | null {
+  if (videoId.startsWith('https://')) return null
+  return getThumbnailUrl(videoId)
+}
 
 interface Props {
   params: Promise<{ id: string }>
@@ -27,17 +38,27 @@ export default async function ProfilePage({ params }: Props) {
 
   return (
     <div className="min-h-dvh bg-black text-white" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}>
-      {/* Header with video preview */}
+      {/* Header with video thumbnail / gradient */}
       <div className="relative h-64 overflow-hidden">
         {profile.cloudflare_video_id ? (
-          <video
-            src={profile.cloudflare_video_id}
-            className="absolute inset-0 w-full h-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-          />
+          /* Use CF thumbnail as header image — avoids HLS autoplay complexity */
+          // eslint-disable-next-line @next/next/no-img-element
+          resolveThumbnailUrl(profile.cloudflare_video_id) ? (
+            <img
+              src={resolveThumbnailUrl(profile.cloudflare_video_id)!}
+              alt={profile.name}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <video
+              src={profile.cloudflare_video_id}
+              className="absolute inset-0 w-full h-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+          )
         ) : (
           <div className="absolute inset-0"
             style={{ background: 'linear-gradient(135deg, #F47B8A, #C084FC)' }} />
@@ -105,7 +126,7 @@ export default async function ProfilePage({ params }: Props) {
           <div className="rounded-2xl overflow-hidden w-full" style={{ aspectRatio: '9/16', maxHeight: '65vh' }}>
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video
-              src={profile.cloudflare_video_id}
+              src={resolveVideoUrl(profile.cloudflare_video_id)}
               controls
               playsInline
               preload="metadata"

@@ -5,10 +5,14 @@ export interface Profile {
   age: number | null
   city: string | null
   bio: string | null
-  cloudflare_video_id: string | null
+  cloudflare_video_id: string | null  // Cloudflare Stream video UID (or legacy Supabase URL)
   video_thumbnail_url: string | null
   likes_count: number
   is_premium: boolean
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  wp_post_id: number | null
+  wp_user_id: number | null
   created_at: string
   updated_at: string
 }
@@ -33,6 +37,10 @@ export type ProfileInsert = {
   video_thumbnail_url?: string | null
   likes_count?: number
   is_premium?: boolean
+  stripe_customer_id?: string | null
+  stripe_subscription_id?: string | null
+  wp_post_id?: number | null
+  wp_user_id?: number | null
 }
 
 export type ProfileUpdate = Partial<{
@@ -44,6 +52,10 @@ export type ProfileUpdate = Partial<{
   video_thumbnail_url: string | null
   likes_count: number
   is_premium: boolean
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  wp_post_id: number | null
+  wp_user_id: number | null
 }>
 
 export type ContactInsert = {

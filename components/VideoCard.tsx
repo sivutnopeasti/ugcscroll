@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import type { Profile } from '@/lib/types'
 import LikeButton from './LikeButton'
 import ContactModal from './ContactModal'
+import VideoPlayer from './VideoPlayer'
 import Link from 'next/link'
+import { getHlsUrl } from '@/lib/cloudflare'
 
 interface VideoCardProps {
   profile: Profile
@@ -13,50 +15,25 @@ interface VideoCardProps {
   onMuteToggle: () => void
 }
 
+// Handle both Cloudflare Stream UIDs and legacy Supabase Storage URLs
+function resolveVideoUrl(videoId: string): string {
+  if (videoId.startsWith('https://')) return videoId   // legacy Supabase URL
+  return getHlsUrl(videoId)                             // CF Stream HLS
+}
+
 export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle }: VideoCardProps) {
-  const videoRef = useRef<HTMLVideoElement>(null)
   const [contactOpen, setContactOpen] = useState(false)
   const [bioExpanded, setBioExpanded] = useState(false)
-  const videoUrl = profile.cloudflare_video_id!
-
-  // React's muted prop is broken — always set via DOM ref
-  const setVideoRef = useCallback((el: HTMLVideoElement | null) => {
-    if (el) {
-      el.muted = globalMuted
-      videoRef.current = el
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const videoUrl = resolveVideoUrl(profile.cloudflare_video_id!)
 
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-    if (isActive) {
-      video.muted = globalMuted
-      video.play().catch(() => {})
-    } else {
-      video.pause()
-      setBioExpanded(false)
-    }
-  }, [isActive]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const video = videoRef.current
-    if (video) video.muted = globalMuted
-  }, [globalMuted])
+    if (!isActive) setBioExpanded(false)
+  }, [isActive])
 
   return (
     <div className="video-snap-card">
-      {/* Video — muted set via ref (React muted prop is broken) */}
-      <video
-        ref={setVideoRef}
-        className="video-fill"
-        src={videoUrl}
-        loop
-        muted
-        playsInline
-        preload="metadata"
-        x-webkit-airplay="allow"
-      />
+      {/* HLS VideoPlayer handles play/pause and muted state internally */}
+      <VideoPlayer videoUrl={videoUrl} shouldPlay={isActive} muted={globalMuted} />
 
       {/* Gradient overlay */}
       <div className="video-overlay" style={{ zIndex: 2 }} />
