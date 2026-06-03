@@ -31,20 +31,23 @@ if ( ! defined( 'UGC_SSO_TTL_SECONDS' ) ) {
 // ── SSO URL -generaattori ─────────────────────────────────────────────────────
 
 /**
- * Palauttaa SSO-linkin kirjautuneelle WP-käyttäjälle tai tyhjän merkkijonon.
+ * Palauttaa SSO-linkin kirjautuneelle WP-käyttäjälle.
+ * Jos käyttäjä EI ole kirjautunut, palauttaa UGC Scrollin kirjautumissivun
+ * URL:in ?from=ugcsuomi-parametrilla.
  *
  * @param int|null $wp_post_id  Valinnainen: käyttäjän UGC CPT -postauksen ID
  * @return string
  */
 function ugc_get_sso_url( int $wp_post_id = null ): string {
+    // Ei kirjautunut → vie UGC Scrollin kirjautumissivulle ohjeistuksineen
     if ( ! is_user_logged_in() ) {
-        return '';
+        return trailingslashit( UGC_SCROLL_URL ) . 'creator/login?from=ugcsuomi';
     }
 
     $secret = defined( 'WP_JWT_SECRET' ) ? WP_JWT_SECRET : '';
     if ( ! $secret ) {
-        // WP_JWT_SECRET puuttuu wp-config.php:stä
-        return '';
+        // WP_JWT_SECRET puuttuu wp-config.php:stä — fallback kirjautumissivulle
+        return trailingslashit( UGC_SCROLL_URL ) . 'creator/login?from=ugcsuomi';
     }
 
     $user = wp_get_current_user();

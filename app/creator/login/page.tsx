@@ -2,13 +2,16 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 export default function CreatorLoginPage() {
+  const searchParams = useSearchParams()
+  const fromUgcSuomi = searchParams.get('from') === 'ugcsuomi'
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [mode, setMode] = useState<'login' | 'signup'>('signup')
+  const [mode, setMode] = useState<'login' | 'signup'>(fromUgcSuomi ? 'login' : 'signup')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
   const router = useRouter()
@@ -60,8 +63,32 @@ export default function CreatorLoginPage() {
         <span className="font-bold text-2xl" style={{ color: '#1a1a1a' }}>UGC Suomi</span>
       </Link>
 
+      {/* ugcsuomi.fi SSO banner */}
+      {fromUgcSuomi && (
+        <div className="w-full max-w-sm mb-4 p-4 rounded-2xl flex flex-col gap-2"
+          style={{ background: 'rgba(244,123,138,0.10)', border: '1px solid rgba(244,123,138,0.3)' }}>
+          <p className="text-sm font-semibold" style={{ color: '#C0384A' }}>
+            Kirjaudu ugcsuomi.fi-tunnuksillasi
+          </p>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            Käytä samaa sähköpostia ja salasanaa kuin ugcsuomi.fi-profiilissasi.
+            Jos sinulla ei ole vielä tiliä,{' '}
+            <a
+              href="https://ugcsuomi.fi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline"
+              style={{ color: '#E25C6E' }}
+            >
+              rekisteröidy ensin ugcsuomi.fi:ssä
+            </a>
+            {' '}ja palaa sitten tähän linkin kautta.
+          </p>
+        </div>
+      )}
+
       {/* Free badge — shown only on signup */}
-      {mode === 'signup' && (
+      {!fromUgcSuomi && mode === 'signup' && (
         <div className="flex items-center gap-2 mb-5 px-4 py-2 rounded-full"
           style={{ background: 'rgba(244,123,138,0.12)', border: '1px solid rgba(244,123,138,0.3)' }}>
           <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#F47B8A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,9 +106,11 @@ export default function CreatorLoginPage() {
           {mode === 'signup' ? 'Luo profiili' : 'Kirjaudu sisään'}
         </h1>
         <p className="text-sm text-gray-500 mb-6">
-          {mode === 'signup'
-            ? 'Lisää esittelyvideosi ja tavoita yrityksiä'
-            : 'Hallinnoi profiiliasi ja yhteydenottoja'}
+          {fromUgcSuomi
+            ? 'Kirjaudu ugcsuomi.fi-tunnuksillasi päästäksesi profiiliisi'
+            : mode === 'signup'
+              ? 'Lisää esittelyvideosi ja tavoita yrityksiä'
+              : 'Hallinnoi profiiliasi ja yhteydenottoja'}
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -129,8 +158,8 @@ export default function CreatorLoginPage() {
           </button>
         </form>
 
-        {/* What you get — shown on signup */}
-        {mode === 'signup' && (
+        {/* What you get — shown on signup, not when coming from ugcsuomi */}
+        {!fromUgcSuomi && mode === 'signup' && (
           <div className="mt-5 pt-4 border-t border-gray-100">
             <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Mitä saat</p>
             <ul className="flex flex-col gap-1.5">
