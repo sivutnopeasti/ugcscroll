@@ -71,11 +71,11 @@ export default function BottomNav({ active }: BottomNavProps) {
           active === 'liked' ? 'opacity-100' : 'opacity-50 hover:opacity-80'
         }`}
       >
-        <svg className="w-6 h-6" fill={active === 'liked' ? '#F47B8A' : 'none'} stroke={active === 'liked' ? '#F47B8A' : 'white'} viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill={active === 'liked' ? '#F496A5' : 'none'} stroke={active === 'liked' ? '#F496A5' : 'white'} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active === 'liked' ? 0 : 2}
             d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
-        <span className="text-xs font-medium" style={{ color: active === 'liked' ? '#F47B8A' : 'white' }}>
+        <span className="text-xs font-medium" style={{ color: active === 'liked' ? '#F496A5' : 'white' }}>
           Tykkätyt
         </span>
       </Link>
@@ -93,9 +93,9 @@ export default function BottomNav({ active }: BottomNavProps) {
             className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs"
             style={{
               background: active === 'creator'
-                ? 'linear-gradient(135deg, #F47B8A, #C084FC)'
-                : 'linear-gradient(135deg, rgba(244,123,138,0.7), rgba(192,132,252,0.7))',
-              outline: active === 'creator' ? '2px solid #F47B8A' : 'none',
+                ? 'linear-gradient(90deg, #F496A5, #81BFD4)'
+                : 'linear-gradient(90deg, rgba(244,150,165,0.7), rgba(129,191,212,0.7))',
+              outline: active === 'creator' ? '2px solid #F496A5' : 'none',
               outlineOffset: '1px',
             }}
           >
@@ -105,7 +105,7 @@ export default function BottomNav({ active }: BottomNavProps) {
           /* Logged in, no profile yet */
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center border"
-            style={{ borderColor: active === 'creator' ? '#F47B8A' : 'rgba(255,255,255,0.5)' }}
+            style={{ borderColor: active === 'creator' ? '#F496A5' : 'rgba(255,255,255,0.5)' }}
           >
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -116,7 +116,7 @@ export default function BottomNav({ active }: BottomNavProps) {
           /* Not logged in */
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center border"
-            style={{ borderColor: active === 'creator' ? '#F47B8A' : 'rgba(255,255,255,0.5)' }}
+            style={{ borderColor: active === 'creator' ? '#F496A5' : 'rgba(255,255,255,0.5)' }}
           >
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

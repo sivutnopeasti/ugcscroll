@@ -91,7 +91,7 @@ export default function LikeButton({ profileId, initialCount }: LikeButtonProps)
       }`}>
         <svg
           className={`w-6 h-6 transition-transform duration-200 ${liked ? 'scale-110' : 'scale-100'}`}
-          style={{ color: liked ? '#F47B8A' : 'white' }}
+          style={{ color: liked ? '#F496A5' : 'white' }}
           fill={liked ? 'currentColor' : 'none'}
           stroke="currentColor"
           viewBox="0 0 24 24"

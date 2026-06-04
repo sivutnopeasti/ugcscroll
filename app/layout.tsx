@@ -1,8 +1,18 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist } from 'next/font/google'
+import { Inter, Lexend_Deca } from 'next/font/google'
 import './globals.css'
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+const lexend = Lexend_Deca({
+  subsets: ['latin'],
+  variable: '--font-lexend',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'UGC Suomi — Löydä sisällöntuottajasi',
@@ -18,12 +28,12 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#000000',
+  themeColor: '#F496A5',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fi" className={geist.variable}>
+    <html lang="fi" className={`${inter.variable} ${lexend.variable}`}>
       <body>{children}</body>
     </html>
   )

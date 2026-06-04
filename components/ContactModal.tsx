@@ -79,8 +79,8 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
           {status === 'success' ? (
             <div className="flex flex-col items-center py-8 gap-4">
               <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                style={{ background: 'rgba(244,123,138,0.2)', border: '2px solid #F47B8A' }}>
-                <svg className="w-8 h-8 text-brand-pink" style={{ color: '#F47B8A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                style={{ background: 'rgba(244,150,165,0.2)', border: '2px solid #F496A5' }}>
+                <svg className="w-8 h-8 text-brand-pink" style={{ color: '#F496A5' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
@@ -93,7 +93,7 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
               <button
                 onClick={onClose}
                 className="mt-2 px-8 py-2.5 rounded-full font-semibold text-white"
-                style={{ background: '#F47B8A' }}
+                style={{ background: '#F496A5' }}
               >
                 Sulje
               </button>
@@ -124,7 +124,7 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
                   value={form.senderName}
                   onChange={(e) => setForm({ ...form, senderName: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/10 focus:outline-none focus:border-brand-pink text-sm"
-                  style={{ '--tw-ring-color': '#F47B8A' } as React.CSSProperties}
+                  style={{ '--tw-ring-color': '#F496A5' } as React.CSSProperties}
                 />
                 <input
                   type="email"
@@ -158,7 +158,7 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
                   type="submit"
                   disabled={status === 'loading'}
                   className="w-full py-3.5 rounded-xl font-bold text-white mt-1 transition-opacity disabled:opacity-60"
-                  style={{ background: 'linear-gradient(135deg, #F47B8A 0%, #E25C6E 100%)' }}
+                  style={{ background: 'linear-gradient(135deg, #F496A5 0%, #D25A6C 100%)' }}
                 >
                   {status === 'loading' ? 'Lähetetään...' : 'Lähetä viesti'}
                 </button>

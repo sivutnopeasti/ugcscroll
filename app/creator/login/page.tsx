@@ -56,7 +56,7 @@ export default function CreatorLoginPage() {
 
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center px-5"
-      style={{ background: 'linear-gradient(135deg, #FDF2F4 0%, #F3E8FF 100%)' }}>
+      style={{ background: 'linear-gradient(135deg, #FFD7DD 0%, #D5EFF7 100%)' }}>
 
       {/* Logo */}
       <Link href="/" className="mb-6 flex items-center gap-2">
@@ -66,7 +66,7 @@ export default function CreatorLoginPage() {
       {/* ugcsuomi.fi SSO banner */}
       {fromUgcSuomi && (
         <div className="w-full max-w-sm mb-4 p-4 rounded-2xl flex flex-col gap-2"
-          style={{ background: 'rgba(244,123,138,0.10)', border: '1px solid rgba(244,123,138,0.3)' }}>
+          style={{ background: 'rgba(244,150,165,0.10)', border: '1px solid rgba(244,150,165,0.3)' }}>
           <p className="text-sm font-semibold" style={{ color: '#C0384A' }}>
             Kirjaudu ugcsuomi.fi-tunnuksillasi
           </p>
@@ -78,7 +78,7 @@ export default function CreatorLoginPage() {
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium underline"
-              style={{ color: '#E25C6E' }}
+              style={{ color: '#D25A6C' }}
             >
               rekisteröidy ensin ugcsuomi.fi:ssä
             </a>
@@ -90,12 +90,12 @@ export default function CreatorLoginPage() {
       {/* Free badge — shown only on signup */}
       {!fromUgcSuomi && mode === 'signup' && (
         <div className="flex items-center gap-2 mb-5 px-4 py-2 rounded-full"
-          style={{ background: 'rgba(244,123,138,0.12)', border: '1px solid rgba(244,123,138,0.3)' }}>
-          <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#F47B8A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          style={{ background: 'rgba(244,150,165,0.12)', border: '1px solid rgba(244,150,165,0.3)' }}>
+          <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#F496A5' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
           </svg>
-          <span className="text-sm font-semibold" style={{ color: '#E25C6E' }}>
+          <span className="text-sm font-semibold" style={{ color: '#D25A6C' }}>
             Ilmainen profiili — ei luottokorttia
           </span>
         </div>
@@ -150,7 +150,7 @@ export default function CreatorLoginPage() {
             type="submit"
             disabled={status === 'loading' || status === 'success'}
             className="w-full py-3.5 rounded-xl font-bold text-white mt-1 transition-opacity disabled:opacity-60"
-            style={{ background: 'linear-gradient(135deg, #F47B8A 0%, #E25C6E 100%)' }}
+            style={{ background: 'linear-gradient(135deg, #F496A5 0%, #D25A6C 100%)' }}
           >
             {status === 'loading'
               ? 'Ladataan...'
@@ -170,7 +170,7 @@ export default function CreatorLoginPage() {
                 'Näe kaikki yhteydenotot dashboardilla',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2 text-xs text-gray-500">
-                  <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: '#F47B8A' }} fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: '#F496A5' }} fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                   {item}
@@ -188,7 +188,7 @@ export default function CreatorLoginPage() {
               setStatus('idle')
             }}
             className="text-sm font-medium"
-            style={{ color: '#F47B8A' }}
+            style={{ color: '#F496A5' }}
           >
             {mode === 'signup'
               ? 'Onko sinulla jo tili? Kirjaudu'

@@ -85,8 +85,8 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
     return (
       <div className="relative h-dvh flex flex-col items-center justify-center bg-black text-white gap-4">
         <div className="w-16 h-16 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(244,123,138,0.2)', border: '1px solid rgba(244,123,138,0.4)' }}>
-          <svg className="w-8 h-8" style={{ color: '#F47B8A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          style={{ background: 'rgba(244,150,165,0.2)', border: '1px solid rgba(244,150,165,0.4)' }}>
+          <svg className="w-8 h-8" style={{ color: '#F496A5' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
               d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
@@ -96,7 +96,7 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
           <a
             href="/creator/login"
             className="inline-block px-6 py-3 rounded-full font-bold text-white text-sm"
-            style={{ background: 'linear-gradient(135deg, #F47B8A 0%, #E25C6E 100%)' }}
+            style={{ background: 'linear-gradient(135deg, #F496A5 0%, #D25A6C 100%)' }}
           >
             Luo ilmainen profiili
           </a>
@@ -138,7 +138,7 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
         {loading && (
           <div className="video-snap-card flex items-center justify-center bg-black">
             <div className="w-8 h-8 rounded-full border-2 border-white/20 animate-spin"
-              style={{ borderTopColor: '#F47B8A' }} />
+              style={{ borderTopColor: '#F496A5' }} />
           </div>
         )}
       </div>

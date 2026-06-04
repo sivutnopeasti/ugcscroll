@@ -194,9 +194,9 @@ export default function CreatorDashboard() {
   if (loading) {
     return (
       <div className="min-h-dvh flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, #FDF2F4 0%, #F3E8FF 100%)' }}>
+        style={{ background: 'linear-gradient(135deg, #FFD7DD 0%, #D5EFF7 100%)' }}>
         <div className="w-8 h-8 rounded-full border-2 border-white/40 animate-spin"
-          style={{ borderTopColor: '#F47B8A' }} />
+          style={{ borderTopColor: '#F496A5' }} />
       </div>
     )
   }
@@ -208,7 +208,7 @@ export default function CreatorDashboard() {
 
   return (
     <div className="min-h-dvh pb-12"
-      style={{ background: 'linear-gradient(135deg, #FDF2F4 0%, #F3E8FF 100%)' }}>
+      style={{ background: 'linear-gradient(135deg, #FFD7DD 0%, #D5EFF7 100%)' }}>
 
       {/* Header */}
       <div className="px-5 pt-safe pt-12 pb-4 flex items-center justify-between">
@@ -253,7 +253,7 @@ export default function CreatorDashboard() {
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-semibold text-gray-900">Premium-tilaus</h2>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-                  style={{ background: 'rgba(244,123,138,0.12)', color: '#E25C6E' }}>
+                  style={{ background: 'rgba(244,150,165,0.12)', color: '#D25A6C' }}>
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
                   Aktiivinen
                 </span>
@@ -279,7 +279,7 @@ export default function CreatorDashboard() {
               <ul className="text-sm text-gray-600 mb-4 space-y-1.5">
                 {['Näyt UGC-feedissä yrityksille', 'Lataa esittelyvideo', 'Vastaanota yhteydenottoja', 'Peruutettavissa milloin tahansa'].map((f) => (
                   <li key={f} className="flex items-center gap-2">
-                    <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#F47B8A' }} fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#F496A5' }} fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     {f}
@@ -290,7 +290,7 @@ export default function CreatorDashboard() {
                 onClick={handleBuyPremium}
                 disabled={checkoutLoading}
                 className="w-full py-3.5 rounded-xl font-bold text-white transition-opacity disabled:opacity-60"
-                style={{ background: 'linear-gradient(135deg, #F47B8A 0%, #C084FC 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #F496A5 0%, #81BFD4 100%)' }}
               >
                 {checkoutLoading ? 'Ohjataan kassalle...' : 'Osta Premium →'}
               </button>
@@ -342,10 +342,10 @@ export default function CreatorDashboard() {
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   {uploadStage === 'uploading' ? (
                     <div className="h-full rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%`, background: 'linear-gradient(90deg, #F47B8A, #C084FC)' }} />
+                      style={{ width: `${uploadProgress}%`, background: 'linear-gradient(90deg, #F496A5, #81BFD4)' }} />
                   ) : (
                     <div className="h-full rounded-full animate-pulse"
-                      style={{ width: '100%', background: 'linear-gradient(90deg, #F47B8A, #C084FC)' }} />
+                      style={{ width: '100%', background: 'linear-gradient(90deg, #F496A5, #81BFD4)' }} />
                   )}
                 </div>
                 {uploadStage === 'processing' && (
@@ -372,7 +372,7 @@ export default function CreatorDashboard() {
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadStage === 'uploading' || uploadStage === 'processing'}
               className="w-full py-3 rounded-xl border-2 border-dashed font-medium text-sm transition-colors disabled:opacity-50"
-              style={{ borderColor: '#F47B8A', color: '#F47B8A' }}
+              style={{ borderColor: '#F496A5', color: '#F496A5' }}
             >
               {videoId ? 'Vaihda video' : '+ Lisää esittelyvideo'}
             </button>
@@ -441,7 +441,7 @@ export default function CreatorDashboard() {
               type="submit"
               disabled={saveStatus === 'saving'}
               className="w-full py-3.5 rounded-xl font-bold text-white transition-opacity disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg, #F47B8A 0%, #E25C6E 100%)' }}
+              style={{ background: 'linear-gradient(135deg, #F496A5 0%, #D25A6C 100%)' }}
             >
               {saveStatus === 'saving' ? 'Tallennetaan...' : saveStatus === 'saved' ? '✓ Tallennettu!' : 'Tallenna profiili'}
             </button>
@@ -487,7 +487,7 @@ function ContactRequests({ profile }: { profile: Profile | null }) {
               <a
                 href={`mailto:${req.sender_email}`}
                 className="text-xs font-medium px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(244,123,138,0.15)', color: '#E25C6E' }}
+                style={{ background: 'rgba(244,150,165,0.15)', color: '#D25A6C' }}
               >
                 Vastaa
               </a>

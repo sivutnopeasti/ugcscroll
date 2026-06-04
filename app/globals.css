@@ -1,26 +1,67 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-brand-pink: #F47B8A;
-  --color-brand-pink-dark: #E25C6E;
-  --color-brand-pink-light: #FADADD;
-  --color-brand-purple: #C084FC;
-  --color-brand-bg: #FDF2F4;
+/* ── ugcsuomi.fi design tokens ─────────────────────────────────────────────── */
+/* Source: Elementor kit #757 + container element #793fda2c                     */
 
+@theme inline {
+  /* Primary palette (matches --e-global-color-primary / -f50960e) */
+  --color-brand-pink:       #F496A5;   /* primary   */
+  --color-brand-pink-dark:  #D25A6C;   /* ac2fa60   */
+  --color-brand-pink-mid:   #E98191;   /* 92d163e   */
+  --color-brand-pink-light: #FFC9D1;   /* faccddf   */
+  --color-brand-pink-pale:  #FFD7DD;   /* 07fbf72   */
+
+  /* Secondary palette (blue family) */
+  --color-brand-blue:       #81BFD4;   /* f50960e – gradient endpoint */
+  --color-brand-blue-dark:  #64A4B9;   /* acced36  */
+  --color-brand-blue-light: #D5EFF7;   /* 596537f  */
+  --color-brand-blue-pale:  #C6EAF6;   /* b7f5bb1  */
+
+  /* Neutral */
+  --color-brand-bg:         #F9F9F9;   /* c6c574f  */
+  --color-brand-bg-warm:    #FFFAFA;   /* f3c9d69  */
+  --color-brand-text:       #696969;   /* text     */
+  --color-brand-text-dark:  #303030;   /* cde8e5e  */
+
+  /* Legacy aliases kept for Tailwind utility compat */
   --color-background: #000000;
   --color-foreground: #ffffff;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-lexend);
 }
 
+/* ── Root CSS variables (usable in inline styles) ───────────────────────────── */
+:root {
+  --ugc-pink:          #F496A5;
+  --ugc-pink-dark:     #D25A6C;
+  --ugc-pink-light:    #FFD7DD;
+  --ugc-blue:          #81BFD4;
+  --ugc-blue-light:    #D5EFF7;
+  --ugc-text:          #696969;
+  --ugc-text-dark:     #303030;
+
+  /* Brand gradient (matches elementor 90deg gradient) */
+  --ugc-gradient:      linear-gradient(90deg, #F496A5 0%, #81BFD4 100%);
+  /* Light tint version — used for page backgrounds */
+  --ugc-gradient-soft: linear-gradient(90deg, #FFD7DD 0%, #D5EFF7 100%);
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────────── */
 html, body {
   height: 100%;
   background: #000;
   color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Feed scroll container */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-lexend), 'Lexend Deca', sans-serif;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+/* ── Feed scroll container ──────────────────────────────────────────────────── */
 .feed-container {
   height: 100dvh;
   overflow-y: scroll;
@@ -40,12 +81,8 @@ html, body {
 }
 
 /* Hide scrollbar */
-.feed-container::-webkit-scrollbar {
-  display: none;
-}
-.feed-container {
-  scrollbar-width: none;
-}
+.feed-container::-webkit-scrollbar { display: none; }
+.feed-container { scrollbar-width: none; }
 
 /* Video fills card */
 .video-fill {
@@ -69,9 +106,28 @@ html, body {
   pointer-events: none;
 }
 
-/* Smooth page transitions for non-feed pages */
+/* ── Page backgrounds (login, dashboard, profile) ───────────────────────────── */
+/* Matches ugcsuomi.fi: 90deg gradient (pink→blue) + BG image at ~12% opacity   */
 .page-bg {
-  background: linear-gradient(135deg, #FDF2F4 0%, #F3E8FF 100%);
+  background-image:
+    linear-gradient(90deg, rgba(255,215,221,0.88) 0%, rgba(213,239,247,0.88) 100%),
+    url('https://ugcsuomi.fi/wp-content/uploads/2024/12/BG-HomePage-High.png');
+  background-size: auto, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
   min-height: 100dvh;
-  color: #1a1a1a;
+  color: var(--ugc-text-dark);
 }
+
+/* ── Brand button ───────────────────────────────────────────────────────────── */
+/* Matches elementor gradient: #F496A5 → #81BFD4                                */
+.btn-brand {
+  background: var(--ugc-gradient);
+  color: #fff;
+  font-family: var(--font-lexend), 'Lexend Deca', sans-serif;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+.btn-brand:hover { opacity: 0.88; }
+.btn-brand:disabled { opacity: 0.55; }

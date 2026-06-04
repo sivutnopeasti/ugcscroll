@@ -61,7 +61,7 @@ export default async function ProfilePage({ params }: Props) {
           )
         ) : (
           <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(135deg, #F47B8A, #C084FC)' }} />
+            style={{ background: 'linear-gradient(90deg, #F496A5, #81BFD4)' }} />
         )}
         <div className="absolute inset-0"
           style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.9) 100%)' }} />
@@ -81,7 +81,7 @@ export default async function ProfilePage({ params }: Props) {
         {profile.is_premium && (
           <div
             className="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
-            style={{ background: 'rgba(244,123,138,0.9)', backdropFilter: 'blur(4px)' }}
+            style={{ background: 'rgba(244,150,165,0.9)', backdropFilter: 'blur(4px)' }}
           >
             <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />

@@ -12,7 +12,7 @@ export default function ContactButton({ profile }: { profile: Profile }) {
       <button
         onClick={() => setOpen(true)}
         className="w-full py-3.5 rounded-2xl font-semibold text-white text-base flex items-center justify-center gap-2"
-        style={{ background: 'linear-gradient(135deg, #F47B8A, #C084FC)' }}
+        style={{ background: 'linear-gradient(135deg, #F496A5, #81BFD4)' }}
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
