@@ -213,7 +213,8 @@ export default function CreatorDashboard() {
       {/* Header */}
       <div className="px-5 pt-safe pt-12 pb-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <span className="font-bold text-xl text-gray-900">UGC Suomi</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="UGC Suomi" style={{ height: 30, filter: 'brightness(0)' }} />
         </Link>
         <button onClick={handleSignOut} className="text-sm font-medium text-gray-500 hover:text-gray-700">
           Kirjaudu ulos

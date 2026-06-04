@@ -111,10 +111,12 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
       {/* Top logo bar */}
       {!hideLogo && (
         <div className="absolute top-0 left-0 right-0 z-20 flex justify-center pt-safe pt-3 pointer-events-none">
-          <span className="text-white font-bold text-base tracking-wide"
-            style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-            UGC Suomi
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="UGC Suomi"
+            style={{ height: 36, filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }}
+          />
         </div>
       )}
 

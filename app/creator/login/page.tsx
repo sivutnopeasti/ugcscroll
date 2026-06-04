@@ -60,7 +60,8 @@ export default function CreatorLoginPage() {
 
       {/* Logo */}
       <Link href="/" className="mb-6 flex items-center gap-2">
-        <span className="font-bold text-2xl" style={{ color: '#1a1a1a' }}>UGC Suomi</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="UGC Suomi" style={{ height: 34, filter: 'brightness(0)' }} />
       </Link>
 
       {/* ugcsuomi.fi SSO banner */}
