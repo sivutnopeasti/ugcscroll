@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import type { Profile, ProfileInsert, ProfileUpdate } from '@/lib/types'
+import type { Profile, ProfileUpdate } from '@/lib/types'
 import { getThumbnailUrl } from '@/lib/cloudflare'
 import Link from 'next/link'
 
@@ -18,8 +18,6 @@ function resolveThumbnail(videoId: string): string | null {
 
 export default function CreatorDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [form, setForm] = useState({ name: '', age: '', city: '', bio: '' })
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [uploadStage, setUploadStage] = useState<UploadStage>('idle')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadError, setUploadError] = useState('')
@@ -42,47 +40,12 @@ export default function CreatorDashboard() {
         .maybeSingle()
 
       if (data) {
-        const p = data as unknown as Profile
-        setProfile(p)
-        setForm({
-          name: p.name ?? '',
-          age: p.age?.toString() ?? '',
-          city: p.city ?? '',
-          bio: p.bio ?? '',
-        })
+        setProfile(data as unknown as Profile)
       }
       setLoading(false)
     }
     init()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaveStatus('saving')
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const age = form.age ? parseInt(form.age) : null
-    let error
-
-    if (profile) {
-      const update: ProfileUpdate = { name: form.name, age, city: form.city || null, bio: form.bio || null }
-      ;({ error } = await supabase.from('profiles').update(update as never).eq('user_id', user.id))
-    } else {
-      const insert: ProfileInsert = { user_id: user.id, name: form.name, age, city: form.city || null, bio: form.bio || null }
-      ;({ error } = await supabase.from('profiles').insert(insert as never))
-    }
-
-    if (error) {
-      setSaveStatus('error')
-    } else {
-      setSaveStatus('saved')
-      const { data } = await supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle()
-      if (data) setProfile(data as unknown as Profile)
-      setTimeout(() => setSaveStatus('idle'), 2000)
-    }
-  }
 
   const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -381,72 +344,84 @@ export default function CreatorDashboard() {
           </div>
         )}
 
-        {/* ── PROFILE FORM ── */}
+        {/* ── PROFILE INFO (synced from ugcsuomi.fi) ── */}
         <div className="bg-white rounded-3xl p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-900 mb-4">Perustiedot</h2>
-
-          <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Nimi *</label>
-              <input
-                type="text"
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Esim. Emma K."
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none text-sm"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Ikä</label>
-                <input
-                  type="number"
-                  min={13}
-                  max={100}
-                  value={form.age}
-                  onChange={(e) => setForm({ ...form, age: e.target.value })}
-                  placeholder="25"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Kaupunki</label>
-                <input
-                  type="text"
-                  value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
-                  placeholder="Helsinki"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Bio</label>
-              <textarea
-                rows={3}
-                value={form.bio}
-                onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                placeholder="Kerro lyhyesti itsestäsi ja siitä, millaista UGC-sisältöä teet..."
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none text-sm resize-none"
-              />
-            </div>
-
-            {saveStatus === 'error' && (
-              <p className="text-sm text-red-500">Tallennus epäonnistui. Yritä uudelleen.</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={saveStatus === 'saving'}
-              className="w-full py-3.5 rounded-xl font-bold text-white transition-opacity disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg, #F496A5 0%, #D25A6C 100%)' }}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900">Profiilitiedot</h2>
+            <a
+              href="https://ugcsuomi.fi/oma-tili"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium flex items-center gap-1"
+              style={{ color: '#F496A5' }}
             >
-              {saveStatus === 'saving' ? 'Tallennetaan...' : saveStatus === 'saved' ? '✓ Tallennettu!' : 'Tallenna profiili'}
-            </button>
-          </form>
+              Muokkaa ugcsuomi.fi:ssä
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+
+          {profile?.name ? (
+            <div className="flex flex-col gap-3">
+              {/* Name + age + city row */}
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
+                  style={{ background: 'linear-gradient(90deg, #F496A5, #81BFD4)' }}>
+                  {profile.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-base leading-tight">
+                    {profile.name}
+                    {profile.age && <span className="font-normal text-gray-500 ml-1.5">{profile.age} v</span>}
+                  </p>
+                  {profile.city && (
+                    <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {profile.city}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Bio */}
+              {profile.bio && (
+                <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-xl px-4 py-3">
+                  {profile.bio}
+                </p>
+              )}
+            </div>
+          ) : (
+            /* No profile data yet */
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-500 mb-3">
+                Tietoja ei ole vielä synkattu. Kirjaudu ugcsuomi.fi:ssä ja avaa UGC Scroll sieltä,
+                niin profiilitietosi siirtyvät automaattisesti.
+              </p>
+              <a
+                href="https://ugcsuomi.fi"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
+                style={{ background: 'linear-gradient(90deg, #F496A5, #81BFD4)' }}
+              >
+                Siirry ugcsuomi.fi:hin
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-400 mt-4 text-center">
+            Tiedot haetaan automaattisesti ugcsuomi.fi-profiilisi mukaan
+          </p>
         </div>
 
         <ContactRequests profile={profile} />

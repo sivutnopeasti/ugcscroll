@@ -52,13 +52,46 @@ function ugc_get_sso_url( int $wp_post_id = null ): string {
 
     $user = wp_get_current_user();
 
-    // --- Tarkista onko käyttäjä premium (muokkaa kenttä-avain tarpeen mukaan) ---
-    $is_premium = (bool) get_user_meta( $user->ID, 'ugc_premium_active', true );
+    // --- Hae käyttäjän CPT-postaus automaattisesti jos wp_post_id puuttuu ---
+    if ( ! $wp_post_id ) {
+        $cpt_slug    = defined( 'UGC_CPT_SLUG' ) ? UGC_CPT_SLUG : 'ugc_sisallontuottaja';
+        $posts       = get_posts( [ 'post_type' => $cpt_slug, 'author' => $user->ID, 'numberposts' => 1 ] );
+        $wp_post_id  = $posts ? $posts[0]->ID : null;
+    }
+
+    // --- Lue ACF-profiilikenttäjä käyttäjän CPT-postauksesta ---
+    $is_premium = false;
+    $age        = null;
+    $city       = null;
+    $bio        = null;
+    $name       = $user->display_name;
+
+    if ( $wp_post_id && function_exists( 'get_field' ) ) {
+        $acf_premium = defined( 'UGC_ACF_PREMIUM_FIELD' ) ? UGC_ACF_PREMIUM_FIELD : 'premium_tilaus_aktiivinen';
+        $acf_age     = defined( 'UGC_ACF_AGE_FIELD' )     ? UGC_ACF_AGE_FIELD     : 'ika';
+        $acf_city    = defined( 'UGC_ACF_CITY_FIELD' )    ? UGC_ACF_CITY_FIELD    : 'kaupunki';
+        $acf_bio     = defined( 'UGC_ACF_BIO_FIELD' )     ? UGC_ACF_BIO_FIELD     : 'lyhyt_kuvaus';
+
+        $is_premium = (bool) get_field( $acf_premium, $wp_post_id );
+        $age_raw    = get_field( $acf_age,  $wp_post_id );
+        $age        = $age_raw ? (int) $age_raw : null;
+        $city_raw   = get_field( $acf_city, $wp_post_id );
+        $city       = $city_raw ? (string) $city_raw : null;
+        $bio_raw    = get_field( $acf_bio,  $wp_post_id );
+        $bio        = $bio_raw  ? (string) $bio_raw  : null;
+        // Use post title as display name if available
+        $post       = get_post( $wp_post_id );
+        if ( $post && $post->post_title ) $name = $post->post_title;
+    }
 
     $payload_data = [
         'email'      => $user->user_email,
         'wp_user_id' => $user->ID,
         'is_premium' => $is_premium,
+        'name'       => $name,
+        'age'        => $age,
+        'city'       => $city,
+        'bio'        => $bio,
         'exp'        => time() + UGC_SSO_TTL_SECONDS,
     ];
 

@@ -24,17 +24,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Supabase service role not configured' }, { status: 500 })
   }
 
-  let body: { wp_user_id: number; wp_post_id: number; email: string; name: string; is_premium?: boolean }
+  let body: {
+    wp_user_id: number; wp_post_id: number; email: string; name: string
+    is_premium?: boolean; age?: number | null; city?: string | null; bio?: string | null
+  }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { wp_user_id, wp_post_id, email, name, is_premium } = body
+  const { wp_user_id, wp_post_id, email, name, is_premium, age, city, bio } = body
   if (!wp_user_id || !wp_post_id || !email || !name) {
     return NextResponse.json({ error: 'Missing required fields: wp_user_id, wp_post_id, email, name' }, { status: 400 })
   }
+
+  // Build optional profile fields — only include keys that were explicitly sent
+  const profileFields: Record<string, unknown> = {}
+  if (age !== undefined)        profileFields.age  = age  ?? null
+  if (city !== undefined)       profileFields.city = city ?? null
+  if (bio !== undefined)        profileFields.bio  = bio  ?? null
 
   const supabase = createSupabaseAdmin(supabaseUrl, serviceRoleKey)
 
@@ -46,13 +55,12 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   if (existingByWp) {
-    // Update existing profile
     await supabase
       .from('profiles')
       .update({
-        wp_post_id,
-        name,
+        wp_post_id, name,
         ...(is_premium !== undefined ? { is_premium } : {}),
+        ...profileFields,
       } as never)
       .eq('id', existingByWp.id)
 
@@ -75,14 +83,14 @@ export async function POST(req: NextRequest) {
     if (existingProfile) {
       await supabase
         .from('profiles')
-        .update({ wp_user_id, wp_post_id, name, ...(is_premium !== undefined ? { is_premium } : {}) } as never)
+        .update({ wp_user_id, wp_post_id, name, ...(is_premium !== undefined ? { is_premium } : {}), ...profileFields } as never)
         .eq('id', existingProfile.id)
       return NextResponse.json({ ok: true, action: 'linked', profile_id: existingProfile.id })
     } else {
       // Auth user exists but no profile row yet
       const { data: inserted } = await supabase
         .from('profiles')
-        .insert({ user_id: matchedUser.id, wp_user_id, wp_post_id, name, is_premium: is_premium ?? false } as never)
+        .insert({ user_id: matchedUser.id, wp_user_id, wp_post_id, name, is_premium: is_premium ?? false, ...profileFields } as never)
         .select('id')
         .single()
       return NextResponse.json({ ok: true, action: 'created', profile_id: inserted?.id })

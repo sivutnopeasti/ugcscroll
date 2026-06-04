@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 
     // ── 2. Parse and validate payload ─────────────────────────────────────
     const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'))
-    const { email, wp_user_id, is_premium, wp_post_id } = payload
+    const { email, wp_user_id, is_premium, wp_post_id, name, age, city, bio } = payload
 
     if (!email || !wp_user_id) throw new Error('Missing email or wp_user_id')
     if (payload.exp < Math.floor(Date.now() / 1000)) throw new Error('Token expired')
@@ -78,26 +78,22 @@ export async function GET(req: NextRequest) {
       .eq('user_id', userId)
       .maybeSingle()
 
-    if (existingProfile) {
-      await admin
-        .from('profiles')
-        .update({
-          wp_user_id,
-          wp_post_id: wp_post_id ?? null,
-          is_premium: is_premium === true,
-        } as never)
-        .eq('user_id', userId)
-    } else {
-      // Profile not yet created — trigger will create it, but set wp fields now
-      await admin
-        .from('profiles')
-        .update({
-          wp_user_id,
-          wp_post_id: wp_post_id ?? null,
-          is_premium: is_premium === true,
-        } as never)
-        .eq('user_id', userId)
+    // Build update object — include profile fields if token carries them
+    const profileUpdate: Record<string, unknown> = {
+      wp_user_id,
+      wp_post_id: wp_post_id ?? null,
+      is_premium: is_premium === true,
     }
+    if (name)              profileUpdate.name = name
+    if (age != null)       profileUpdate.age  = age
+    if (city != null)      profileUpdate.city = city
+    if (bio != null)       profileUpdate.bio  = bio
+
+    if (existingProfile) {
+      await admin.from('profiles').update(profileUpdate as never).eq('user_id', userId)
+    }
+    // If no profile yet: the DB trigger creates it on first login;
+    // sync-creator will set fields on the next WP post save.
 
     // ── 5. Redirect to auth callback with magic link token ────────────────
     const hashed = linkData.properties?.hashed_token
