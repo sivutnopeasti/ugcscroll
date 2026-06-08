@@ -53,35 +53,61 @@ function ugc_get_sso_url( int $wp_post_id = null ): string {
     $user = wp_get_current_user();
 
     // --- Hae käyttäjän CPT-postaus automaattisesti jos wp_post_id puuttuu ---
+    $cpt_slug = defined( 'UGC_CPT_SLUG' ) ? UGC_CPT_SLUG : 'ugc_sisallontuottaja';
     if ( ! $wp_post_id ) {
-        $cpt_slug    = defined( 'UGC_CPT_SLUG' ) ? UGC_CPT_SLUG : 'ugc_sisallontuottaja';
-        $posts       = get_posts( [ 'post_type' => $cpt_slug, 'author' => $user->ID, 'numberposts' => 1 ] );
-        $wp_post_id  = $posts ? $posts[0]->ID : null;
+        $posts      = get_posts( [ 'post_type' => $cpt_slug, 'author' => $user->ID, 'numberposts' => 1 ] );
+        $wp_post_id = $posts ? $posts[0]->ID : null;
     }
 
-    // --- Lue ACF-profiilikenttäjä käyttäjän CPT-postauksesta ---
+    // --- Profiilienkenttä samat vakiot kuin functions-snippet.php:ssä ---
+    $acf_premium = defined( 'UGC_ACF_PREMIUM_FIELD' ) ? UGC_ACF_PREMIUM_FIELD : 'premium_tilaus_aktiivinen';
+    $age_taxonomy= defined( 'UGC_AGE_TAXONOMY' )      ? UGC_AGE_TAXONOMY      : 'ika';
+    $bio_source  = defined( 'UGC_BIO_SOURCE' )        ? UGC_BIO_SOURCE        : 'post_content';
+    $acf_bio     = defined( 'UGC_ACF_BIO_FIELD' )     ? UGC_ACF_BIO_FIELD     : 'lyhyt_kuvaus';
+    $acf_city    = defined( 'UGC_ACF_CITY_FIELD' )    ? UGC_ACF_CITY_FIELD    : 'kaupunki';
+
     $is_premium = false;
     $age        = null;
     $city       = null;
     $bio        = null;
     $name       = $user->display_name;
 
-    if ( $wp_post_id && function_exists( 'get_field' ) ) {
-        $acf_premium = defined( 'UGC_ACF_PREMIUM_FIELD' ) ? UGC_ACF_PREMIUM_FIELD : 'premium_tilaus_aktiivinen';
-        $acf_age     = defined( 'UGC_ACF_AGE_FIELD' )     ? UGC_ACF_AGE_FIELD     : 'ika';
-        $acf_city    = defined( 'UGC_ACF_CITY_FIELD' )    ? UGC_ACF_CITY_FIELD    : 'kaupunki';
-        $acf_bio     = defined( 'UGC_ACF_BIO_FIELD' )     ? UGC_ACF_BIO_FIELD     : 'lyhyt_kuvaus';
+    if ( $wp_post_id ) {
+        $post = get_post( $wp_post_id );
 
-        $is_premium = (bool) get_field( $acf_premium, $wp_post_id );
-        $age_raw    = get_field( $acf_age,  $wp_post_id );
-        $age        = $age_raw ? (int) $age_raw : null;
-        $city_raw   = get_field( $acf_city, $wp_post_id );
-        $city       = $city_raw ? (string) $city_raw : null;
-        $bio_raw    = get_field( $acf_bio,  $wp_post_id );
-        $bio        = $bio_raw  ? (string) $bio_raw  : null;
-        // Use post title as display name if available
-        $post       = get_post( $wp_post_id );
         if ( $post && $post->post_title ) $name = $post->post_title;
+
+        // Premium (ACF)
+        if ( function_exists( 'get_field' ) ) {
+            $is_premium = (bool) get_field( $acf_premium, $wp_post_id );
+        }
+
+        // Ikä taksonomiana
+        $age_terms = wp_get_post_terms( $wp_post_id, $age_taxonomy, [ 'fields' => 'names' ] );
+        if ( ! is_wp_error( $age_terms ) && ! empty( $age_terms ) ) {
+            $age_raw = trim( $age_terms[0] );
+            if ( ctype_digit( $age_raw ) ) $age = (int) $age_raw;
+        }
+
+        // Bio
+        switch ( $bio_source ) {
+            case 'post_content':
+                $bio = $post ? ( wp_strip_all_tags( $post->post_content ) ?: null ) : null;
+                break;
+            case 'post_excerpt':
+                $bio = $post ? ( $post->post_excerpt ?: null ) : null;
+                break;
+            case 'acf':
+                if ( function_exists( 'get_field' ) ) {
+                    $bio = get_field( $acf_bio, $wp_post_id ) ?: null;
+                }
+                break;
+        }
+
+        // Kaupunki (ACF)
+        if ( function_exists( 'get_field' ) ) {
+            $city = get_field( $acf_city, $wp_post_id ) ?: null;
+        }
     }
 
     $payload_data = [
