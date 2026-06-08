@@ -125,3 +125,96 @@ function ugc_sync_creator_to_vercel( int $post_id, WP_Post $post ): void {
         error_log( "UGC Sync: post $post_id → HTTP $code: $body" );
     }
 }
+
+// ---------------------------------------------------------------------------
+// STRIPE-TILAUKSEN PERUUTUS → poista premium UGC Scrollista
+// ---------------------------------------------------------------------------
+// Tämä toimii WooCommerce Subscriptions -lisäosan kanssa.
+// Jos käytät jotain muuta Stripe-integraatiota, korvaa hook-nimi alla.
+//
+// Tuetut hookit:
+//   woocommerce_subscription_status_cancelled   (WooCommerce Subscriptions)
+//   woocommerce_subscription_status_expired
+//   woocommerce_subscription_status_on-hold
+//   stripe_webhook_subscription_deleted         (WP Simple Pay tms.)
+//
+// Lisää tarvittavat hookit alla olevan mallin mukaan.
+
+add_action( 'woocommerce_subscription_status_cancelled', 'ugc_handle_subscription_ended' );
+add_action( 'woocommerce_subscription_status_expired',   'ugc_handle_subscription_ended' );
+add_action( 'woocommerce_subscription_status_on-hold',   'ugc_handle_subscription_ended' );
+
+/**
+ * Kutsutaan kun WooCommerce Subscriptions -tilaus peruutetaan/vanhenee/jäädytetään.
+ * Lähettää is_premium = false UGC Scroll -sovellukseen.
+ *
+ * @param WC_Subscription $subscription
+ */
+function ugc_handle_subscription_ended( $subscription ): void {
+    $vercel_url  = defined( 'UGC_VERCEL_URL' )  ? UGC_VERCEL_URL  : '';
+    $sync_secret = defined( 'UGC_SYNC_SECRET' ) ? UGC_SYNC_SECRET : '';
+    if ( empty( $vercel_url ) || empty( $sync_secret ) ) return;
+
+    $wp_user_id = (int) $subscription->get_user_id();
+    $user       = get_userdata( $wp_user_id );
+    if ( ! $user ) return;
+
+    // Hae käyttäjän CPT-postaus
+    $cpt_slug = defined( 'UGC_CPT_SLUG' ) ? UGC_CPT_SLUG : 'ugc_sisallontuottaja';
+    $posts    = get_posts( [ 'post_type' => $cpt_slug, 'author' => $wp_user_id, 'numberposts' => 1 ] );
+    if ( empty( $posts ) ) {
+        // Ei CPT-postausta — lähetä silti pelkkä is_premium = false sähköpostin perusteella
+        $payload = [
+            'wp_user_id' => $wp_user_id,
+            'wp_post_id' => 0,
+            'email'      => $user->user_email,
+            'name'       => $user->display_name,
+            'is_premium' => false,
+        ];
+    } else {
+        $post    = $posts[0];
+        $payload = [
+            'wp_user_id' => $wp_user_id,
+            'wp_post_id' => $post->ID,
+            'email'      => $user->user_email,
+            'name'       => $post->post_title ?: $user->display_name,
+            'is_premium' => false,
+        ];
+    }
+
+    $response = wp_remote_post(
+        trailingslashit( $vercel_url ) . 'api/sync-creator',
+        [
+            'timeout'     => 10,
+            'headers'     => [
+                'Content-Type'  => 'application/json',
+                'X-Sync-Secret' => $sync_secret,
+            ],
+            'body'        => wp_json_encode( $payload ),
+            'data_format' => 'body',
+        ]
+    );
+
+    if ( is_wp_error( $response ) ) {
+        error_log( 'UGC premium-poisto virhe: ' . $response->get_error_message() );
+    } else {
+        $code = wp_remote_retrieve_response_code( $response );
+        error_log( "UGC premium-poisto: user $wp_user_id → HTTP $code" );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Jos käytät WP Simple Pay tai suoraa Stripe-webhookia (ei WooCommerce),
+// lisää tämä:
+// ---------------------------------------------------------------------------
+/*
+add_action( 'simpay_webhook_customer.subscription.deleted', 'ugc_handle_stripe_subscription_deleted' );
+add_action( 'simpay_webhook_customer.subscription.updated', 'ugc_handle_stripe_subscription_updated' );
+
+function ugc_handle_stripe_subscription_deleted( $event ): void {
+    $customer_id = $event->data->object->customer ?? null;
+    if ( ! $customer_id ) return;
+    // Hae WP-käyttäjä Stripe customer ID:n perusteella ja kutsu ugc_handle_subscription_ended()
+    // (tämä riippuu siitä miten WP tallentaa Stripe customer ID:n käyttäjämetaan)
+}
+*/
