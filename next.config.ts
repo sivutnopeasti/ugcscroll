@@ -1,4 +1,23 @@
-import type { NextConfig } from 'next'
+// next.config.ts
+import type { NextConfig } from 'next';
+
+const frameAncestors =
+  "frame-ancestors 'self' https://ugcsuomi.fi https://www.ugcsuomi.fi https://ugc.visioreach.fi;";
+
+const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'Content-Security-Policy', value: frameAncestors },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;
 
 const nextConfig: NextConfig = {
   images: {
