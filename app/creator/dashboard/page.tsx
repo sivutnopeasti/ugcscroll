@@ -21,7 +21,6 @@ export default function CreatorDashboard() {
   const [uploadStage, setUploadStage] = useState<UploadStage>('idle')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadError, setUploadError] = useState('')
-  const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -123,31 +122,6 @@ export default function CreatorDashboard() {
     setProfile((prev) => prev ? { ...prev, cloudflare_video_id: null, video_thumbnail_url: null } : prev)
   }
 
-  const handleBuyPremium = async () => {
-    setCheckoutLoading(true)
-    try {
-      const res = await fetch('/api/checkout', { method: 'POST' })
-      if (!res.ok) throw new Error('Checkout epäonnistui')
-      const { url } = await res.json()
-      window.location.href = url
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Virhe kassalla')
-      setCheckoutLoading(false)
-    }
-  }
-
-  const handleManageSubscription = async () => {
-    setCheckoutLoading(true)
-    try {
-      const res = await fetch('/api/customer-portal', { method: 'POST' })
-      if (!res.ok) throw new Error('Portaali epäonnistui')
-      const { url } = await res.json()
-      window.location.href = url
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Virhe portaalissa')
-      setCheckoutLoading(false)
-    }
-  }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -167,7 +141,6 @@ export default function CreatorDashboard() {
   const videoId = profile?.cloudflare_video_id ?? null
   const thumbnailUrl = videoId ? resolveThumbnail(videoId) : null
   const isPremium = profile?.is_premium ?? false
-  const subscriptionSuccess = searchParams.get('subscription') === 'success'
 
   return (
     <div className="min-h-dvh pb-12"
@@ -196,71 +169,24 @@ export default function CreatorDashboard() {
             : 'Tilaa Premium näkyäksesi UGC-feedissä'}
         </p>
 
-        {/* Stripe subscription success banner */}
-        {subscriptionSuccess && (
-          <div className="mb-4 p-4 rounded-2xl bg-green-50 border border-green-200 flex items-center gap-3">
-            <svg className="w-6 h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+        {/* ── EI PREMIUM → linkki ugcsuomi.fi:hin ── */}
+        {!isPremium && (
+          <div className="bg-white rounded-3xl p-5 shadow-sm mb-4 flex items-center justify-between gap-4">
             <div>
-              <p className="font-semibold text-green-800 text-sm">Premium aktivoitu!</p>
-              <p className="text-green-700 text-xs mt-0.5">Lataa nyt esittelyvideo niin profiilisi ilmestyy feediin.</p>
+              <p className="font-semibold text-gray-900 text-sm mb-0.5">Ei Premium-tilausta</p>
+              <p className="text-xs text-gray-500">Tilaa Premium ugcsuomi.fi:ssä ja pääset feediin.</p>
             </div>
+            <a
+              href="https://ugcsuomi.fi/oma-tili"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap"
+              style={{ background: 'linear-gradient(135deg, #F496A5 0%, #81BFD4 100%)' }}
+            >
+              Tilaa →
+            </a>
           </div>
         )}
-
-        {/* ── PREMIUM SUBSCRIPTION SECTION ── */}
-        <div className="bg-white rounded-3xl p-5 shadow-sm mb-4">
-          {isPremium ? (
-            /* Active premium */
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-gray-900">Premium-tilaus</h2>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-                  style={{ background: 'rgba(244,150,165,0.12)', color: '#D25A6C' }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-                  Aktiivinen
-                </span>
-              </div>
-              <p className="text-sm text-gray-500 mb-4">
-                Profiilisi näkyy feedissä niin kauan kuin tilaus on voimassa.
-              </p>
-              <button
-                onClick={handleManageSubscription}
-                disabled={checkoutLoading}
-                className="w-full py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                {checkoutLoading ? 'Ohjataan...' : 'Hallitse tilausta / peruuta'}
-              </button>
-            </div>
-          ) : (
-            /* Upsell */
-            <div>
-              <h2 className="font-semibold text-gray-900 mb-1">Tilaa Premium</h2>
-              <p className="text-sm text-gray-500 mb-3">
-                Osta kuukausitilaus ja pääse UGC-feediin yritysten löydettäväksi.
-              </p>
-              <ul className="text-sm text-gray-600 mb-4 space-y-1.5">
-                {['Näyt UGC-feedissä yrityksille', 'Lataa esittelyvideo', 'Vastaanota yhteydenottoja', 'Peruutettavissa milloin tahansa'].map((f) => (
-                  <li key={f} className="flex items-center gap-2">
-                    <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#F496A5' }} fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={handleBuyPremium}
-                disabled={checkoutLoading}
-                className="w-full py-3.5 rounded-xl font-bold text-white transition-opacity disabled:opacity-60"
-                style={{ background: 'linear-gradient(135deg, #F496A5 0%, #81BFD4 100%)' }}
-              >
-                {checkoutLoading ? 'Ohjataan kassalle...' : 'Osta Premium →'}
-              </button>
-            </div>
-          )}
-        </div>
 
         {/* ── VIDEO SECTION (premium only) ── */}
         {isPremium && (
