@@ -27,7 +27,6 @@ export async function createDirectUpload(): Promise<{ uploadURL: string; uid: st
       body: JSON.stringify({
         maxDurationSeconds: 60,
         expiry,
-        meta: { maxDurationSeconds: 60 },
       }),
     }
   )
