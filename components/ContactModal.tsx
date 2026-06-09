@@ -59,18 +59,17 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
       {/* Sheet */}
       <div
         className="relative w-full max-w-lg rounded-t-2xl flex flex-col"
-        style={{ background: '#1c1c1e', zIndex: 51 }}
+        style={{ background: '#ffffff', zIndex: 51 }}
       >
         {/* Handle */}
         <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
-          <div className="w-9 h-1 rounded-full bg-white/25" />
+          <div className="w-9 h-1 rounded-full bg-gray-200" />
         </div>
 
-        {/* Header — TikTok tyylinen */}
+        {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 flex-shrink-0"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          style={{ borderBottom: '1px solid #f0f0f0' }}>
           <div className="flex items-center gap-2.5">
-            {/* Tekijän avatar */}
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #F496A5 0%, #81BFD4 100%)' }}
@@ -78,14 +77,14 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
               {initial}
             </div>
             <div>
-              <p className="text-white font-semibold text-sm leading-tight">{profile.name}</p>
-              <p className="text-white/40 text-xs">Lähetä yhteydenotto</p>
+              <p className="text-gray-900 font-semibold text-sm leading-tight">{profile.name}</p>
+              <p className="text-gray-400 text-xs">Lähetä yhteydenotto</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-colors"
-            style={{ background: 'rgba(255,255,255,0.08)' }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"
+            style={{ background: '#f5f5f5' }}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -104,8 +103,8 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
                 </svg>
               </div>
               <div className="text-center">
-                <p className="text-white font-semibold">Viesti lähetetty!</p>
-                <p className="text-white/50 text-sm mt-1">Viestisi on välitetty {profile.name}:lle!</p>
+                <p className="text-gray-900 font-semibold">Viesti lähetetty!</p>
+                <p className="text-gray-400 text-sm mt-1">Viestisi on välitetty {profile.name}:lle!</p>
               </div>
               <button
                 onClick={onClose}
@@ -124,7 +123,7 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
                 { ref: undefined,     type: 'text',  placeholder: 'Yritys (valinnainen)', key: 'company', required: false, icon: '🏢' },
               ].map((field) => (
                 <div key={field.key} className="flex items-center gap-3 py-3"
-                  style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                  style={                { borderBottom: '1px solid #f0f0f0' }}>
                   <span className="text-base w-5 flex-shrink-0 text-center leading-none select-none">{field.icon}</span>
                   <input
                     ref={field.ref as React.RefObject<HTMLInputElement> | undefined}
@@ -133,14 +132,14 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
                     required={field.required}
                     value={form[field.key as keyof typeof form]}
                     onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
-                    className="flex-1 bg-transparent text-white placeholder-white/35 text-sm focus:outline-none"
+                    className="flex-1 bg-transparent text-gray-900 placeholder-gray-400 text-sm focus:outline-none"
                   />
                 </div>
               ))}
 
               {/* Viestikenttä + lähetä — TikTok add-comment tyylisenä */}
               <div className="flex items-end gap-3 mt-3 p-3 rounded-xl"
-                style={{ background: 'rgba(255,255,255,0.07)' }}>
+                style={{ background: '#f5f5f5' }}>
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0 self-end"
                   style={{ background: 'linear-gradient(135deg, #F496A5 0%, #81BFD4 100%)' }}
@@ -153,7 +152,7 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
                   rows={3}
                   value={form.message}
                   onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  className="flex-1 bg-transparent text-white placeholder-white/35 text-sm focus:outline-none resize-none"
+                  className="flex-1 bg-transparent text-gray-900 placeholder-gray-400 text-sm focus:outline-none resize-none"
                 />
                 <button
                   type="submit"
