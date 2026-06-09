@@ -19,6 +19,7 @@ export default async function HomePage() {
   const { data: profiles } = await supabase
     .from('profiles')
     .select('*')
+    .eq('is_premium', true)
     .not('cloudflare_video_id', 'is', null)
     .limit(200)
 

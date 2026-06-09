@@ -57,6 +57,7 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
+      .eq('is_premium', true)
       .not('cloudflare_video_id', 'is', null)
       .not('id', 'in', `(${shownIds.join(',')})`)
       .limit(PAGE_SIZE)
