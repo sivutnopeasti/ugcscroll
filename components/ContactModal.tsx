@@ -22,7 +22,11 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
   useEffect(() => {
     firstInputRef.current?.focus()
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
+    document.body.classList.add('modal-open')
+    return () => {
+      document.body.style.overflow = ''
+      document.body.classList.remove('modal-open')
+    }
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {

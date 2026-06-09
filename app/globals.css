@@ -84,6 +84,12 @@ h1, h2, h3, h4, h5, h6 {
 .feed-container::-webkit-scrollbar { display: none; }
 .feed-container { scrollbar-width: none; }
 
+/* Lukitse feed kun modaali on auki */
+body.modal-open .feed-container {
+  overflow: hidden;
+  touch-action: none;
+}
+
 /* Video fills card */
 .video-fill {
   position: absolute;
