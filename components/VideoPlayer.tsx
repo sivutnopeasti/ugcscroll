@@ -29,16 +29,15 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted }: VideoPlayer
           enableWorker: true,
           lowLatencyMode: false,
 
-          // Aloita korkeammalta bitrate-arvaukselta (2 Mbps) → hls.js valitsee
-          // 720p/1080p heti alusta eikä rampaa ylös 360p:stä
-          abrEwmaDefaultEstimate: 2_000_000,
+          // Aloita 4 Mbps arvauksella → hls.js valitsee 1080p heti eikä rampaa
+          // ylös hitaasti 360p:stä. Laskee automaattisesti jos verkko ei riitä.
+          abrEwmaDefaultEstimate: 4_000_000,
           abrMaxWithRealBitrate: true,
 
-          // Rajoita laatu näytön kokoon — mobiililla 720p riittää, ei tuhlata
-          // kaistaa 1080p:hen kun ruutu on 390 px leveä
-          capLevelToPlayerSize: true,
+          // EI capLevelToPlayerSize — elementti voi olla kapea (9:16 pöytäkoneella)
+          // mutta video pitää silti toistaa korkeimmalla saatavilla olevalla laadulla.
 
-          // Bufferoi koko 60 s video keralla → sujuva toisto ilman keskeytyksiä
+          // Bufferoi koko 60 s video kerralla → sujuva toisto ilman keskeytyksiä
           maxBufferLength: 60,
           maxMaxBufferLength: 60,
           backBufferLength: 60,
