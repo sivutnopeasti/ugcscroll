@@ -65,17 +65,21 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Sheet */}
+      {/* Sheet — max 90% ruudun korkeudesta, sisältö scrollaa */}
       <div
-        className="relative w-full max-w-lg rounded-t-3xl overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', zIndex: 51 }}
+        className="relative w-full max-w-lg rounded-t-3xl flex flex-col"
+        style={{
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+          zIndex: 51,
+          maxHeight: '90dvh',
+        }}
       >
         {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1">
+        <div className="flex-shrink-0 flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-white/20" />
         </div>
 
-        <div className="px-5 pb-8 pt-2">
+        <div className="overflow-y-auto px-5 pt-2" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
           {status === 'success' ? (
             <div className="flex flex-col items-center py-8 gap-4">
               <div className="w-16 h-16 rounded-full flex items-center justify-center"
@@ -87,7 +91,7 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
               <div className="text-center">
                 <h3 className="text-white font-bold text-lg">Viesti lähetetty!</h3>
                 <p className="text-white/60 text-sm mt-1">
-                  {profile.name} saa sinuun pian yhteyttä.
+                  Viestisi on välitetty {profile.name}:lle!
                 </p>
               </div>
               <button
