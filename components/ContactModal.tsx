@@ -50,7 +50,6 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       {/* Backdrop */}
@@ -93,7 +92,8 @@ export default function ContactModal({ profile, onClose }: ContactModalProps) {
         </div>
 
         {/* Sisältö */}
-        <div className="px-4 py-3 flex-shrink-0">
+        <div className="px-4 py-3 flex-shrink-0"
+          style={{ paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}>
           {status === 'success' ? (
             <div className="flex flex-col items-center py-6 gap-3">
               <div className="w-14 h-14 rounded-full flex items-center justify-center"
