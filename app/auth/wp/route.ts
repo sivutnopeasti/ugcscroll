@@ -82,10 +82,10 @@ export async function GET(req: NextRequest) {
       wp_post_id: wp_post_id ?? null,
       is_premium: is_premium === true,
     }
-    if (name)         profileUpdate.name = name
-    if (age != null)  profileUpdate.age  = age
-    if (city != null) profileUpdate.city = city
-    if (bio != null)  profileUpdate.bio  = bio
+    if (name)                      profileUpdate.name = name
+    if (age != null && age !== '') profileUpdate.age  = String(age) // WP-taksonomia voi olla "18-24"
+    if (city != null)              profileUpdate.city = city
+    if (bio != null)               profileUpdate.bio  = bio
 
     // Upsert profiilirivin user_id:n perusteella → luo jos puuttuu, päivitä jos on.
     // Vaatii uniikin rajoitteen profiles.user_id:lle (yleensä on).

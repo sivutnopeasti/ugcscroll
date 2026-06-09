@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
 
   let body: {
     wp_user_id: number; wp_post_id: number; email: string; name: string
-    is_premium?: boolean; age?: number | null; city?: string | null; bio?: string | null
+    is_premium?: boolean; age?: string | null; city?: string | null; bio?: string | null
+    timestamp?: number // WP lisää replay-suojaukseksi, ei tallenneta
   }
   try {
     body = await req.json()

@@ -2,7 +2,7 @@ export interface Profile {
   id: string
   user_id: string
   name: string
-  age: number | null
+  age: string | null
   city: string | null
   bio: string | null
   cloudflare_video_id: string | null  // Cloudflare Stream video UID (or legacy Supabase URL)
@@ -45,7 +45,7 @@ export type ProfileInsert = {
 
 export type ProfileUpdate = Partial<{
   name: string
-  age: number | null
+  age: string | null
   city: string | null
   bio: string | null
   cloudflare_video_id: string | null

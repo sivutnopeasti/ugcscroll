@@ -374,7 +374,7 @@ export default function CreatorDashboard() {
                 <div>
                   <p className="font-semibold text-gray-900 text-base leading-tight">
                     {profile.name}
-                    {profile.age && <span className="font-normal text-gray-500 ml-1.5">{profile.age} v</span>}
+                    {profile.age && <span className="font-normal text-gray-500 ml-1.5">{profile.age}</span>}
                   </p>
                   {profile.city && (
                     <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
