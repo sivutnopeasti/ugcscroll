@@ -3,7 +3,7 @@ export function getHlsUrl(videoId: string): string {
 }
 
 export function getThumbnailUrl(videoId: string): string {
-  return `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg?height=640&fit=crop`
+  return `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg?height=1080&fit=crop`
 }
 
 export async function createDirectUpload(): Promise<{ uploadURL: string; uid: string }> {
@@ -25,8 +25,9 @@ export async function createDirectUpload(): Promise<{ uploadURL: string; uid: st
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        maxDurationSeconds: 300,
+        maxDurationSeconds: 60,
         expiry,
+        meta: { maxDurationSeconds: 60 },
       }),
     }
   )

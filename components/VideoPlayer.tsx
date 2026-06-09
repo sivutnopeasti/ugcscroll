@@ -28,7 +28,20 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted }: VideoPlayer
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: false,
-          backBufferLength: 30,
+
+          // Aloita korkeammalta bitrate-arvaukselta (2 Mbps) → hls.js valitsee
+          // 720p/1080p heti alusta eikä rampaa ylös 360p:stä
+          abrEwmaDefaultEstimate: 2_000_000,
+          abrMaxWithRealBitrate: true,
+
+          // Rajoita laatu näytön kokoon — mobiililla 720p riittää, ei tuhlata
+          // kaistaa 1080p:hen kun ruutu on 390 px leveä
+          capLevelToPlayerSize: true,
+
+          // Bufferoi koko 60 s video keralla → sujuva toisto ilman keskeytyksiä
+          maxBufferLength: 60,
+          maxMaxBufferLength: 60,
+          backBufferLength: 60,
         })
         hls.loadSource(videoUrl)
         hls.attachMedia(video)

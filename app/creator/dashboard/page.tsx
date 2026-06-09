@@ -59,6 +59,13 @@ export default function CreatorDashboard() {
       return
     }
 
+    // Tarkista kesto asiakaspuolella ennen latausta
+    const duration = await getVideoDuration(file)
+    if (duration !== null && duration > 61) {
+      setUploadError(`Video on liian pitkä (${Math.round(duration)} s) — max 1 minuutti`)
+      return
+    }
+
     setUploadStage('uploading')
     setUploadProgress(0)
     setUploadError('')
@@ -266,7 +273,7 @@ export default function CreatorDashboard() {
             >
               {videoId ? 'Vaihda video' : '+ Lisää esittelyvideo'}
             </button>
-            <p className="text-xs text-gray-400 mt-2 text-center">MP4, MOV — max 500 MB, max 5 min</p>
+            <p className="text-xs text-gray-400 mt-2 text-center">MP4, MOV — max 500 MB, max 1 min</p>
           </div>
         )}
 
@@ -403,6 +410,21 @@ function ContactRequests({ profile }: { profile: Profile | null }) {
       </div>
     </div>
   )
+}
+
+// Read video duration from a local File before uploading
+function getVideoDuration(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url)
+      resolve(isFinite(video.duration) ? video.duration : null)
+    }
+    video.onerror = () => { URL.revokeObjectURL(url); resolve(null) }
+    video.src = url
+  })
 }
 
 // Upload file to Cloudflare Stream Direct Upload URL with progress tracking
