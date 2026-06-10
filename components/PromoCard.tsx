@@ -37,7 +37,7 @@ export default function PromoCard() {
             Tilaa UGC Suomi Pro ja lataa esittelyvideosi UGC Scrolliin.
           </h2>
           <p className="text-white/80 text-sm leading-relaxed">
-            Tavoita yritykset ja brändit yhdellä videolla — tule osaksi Suomen suurinta UGC-yhteisöä.
+            Tavoita yritykset ja brändit yhdellä videolla. Tule osaksi Suomen suurinta UGC-yhteisöä.
           </p>
         </div>
 
