@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
 @keyframes bounce-down {
-  0%, 100% { transform: translateY(0);   opacity: inherit; }
-  50%       { transform: translateY(7px); opacity: inherit; }
+  0%, 100% { transform: translateY(0);   }
+  50%       { transform: translateY(7px); }
+}
+
+@keyframes scroll-dot {
+  0%   { transform: translateY(0);    opacity: 1;   }
+  60%  { transform: translateY(18px); opacity: 0.2; }
+  100% { transform: translateY(0);    opacity: 0;   }
 }
 
 /* ── ugcsuomi.fi design tokens ─────────────────────────────────────────────── */

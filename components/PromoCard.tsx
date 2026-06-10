@@ -59,26 +59,45 @@ export default function PromoCard() {
 
       {/* Scrollaa alas -animaatio */}
       <div
-        className="absolute bottom-24 left-0 right-0 flex flex-col items-center gap-1 pointer-events-none"
+        className="absolute bottom-20 left-0 right-0 flex flex-col items-center gap-3 pointer-events-none"
         aria-hidden
       >
-        <span className="text-white/60 text-xs tracking-widest uppercase">Selaa profiileja</span>
-        {/* Kolme pomppivaa nuolta */}
-        {[0, 1, 2].map((i) => (
-          <svg
-            key={i}
-            className="w-5 h-5 text-white"
+        <span className="text-white/70 text-xs font-medium tracking-widest uppercase">
+          Selaa profiileja
+        </span>
+
+        {/* Hiiri / scroll-indikaattori */}
+        <div
+          className="relative flex justify-center"
+          style={{
+            width: 28,
+            height: 44,
+            borderRadius: 14,
+            border: '2px solid rgba(255,255,255,0.7)',
+          }}
+        >
+          {/* Liikkuva pallo sisällä */}
+          <div
             style={{
-              opacity: 0.4 + i * 0.2,
-              animation: `bounce-down 1.4s ease-in-out ${i * 0.18}s infinite`,
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: '#fff',
+              position: 'absolute',
+              top: 6,
+              animation: 'scroll-dot 1.6s ease-in-out infinite',
             }}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-          </svg>
-        ))}
+          />
+        </div>
+
+        {/* Iso pomppiva nuoli */}
+        <svg
+          className="w-7 h-7 text-white"
+          style={{ animation: 'bounce-down 1.4s ease-in-out infinite', opacity: 0.85 }}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
       </div>
     </div>
   )
