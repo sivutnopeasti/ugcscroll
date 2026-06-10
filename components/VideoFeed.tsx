@@ -165,12 +165,17 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
   }
 
   return (
-    <div
-      className="relative h-dvh bg-black"
+    // Ulkokuori: täysleveä musta tausta pöytäkoneella
+    <div className="h-dvh bg-black flex justify-center"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Sisäkolumni: mobiililla täysleveä, pöytäkoneella max 9:16-leveys */}
+      <div
+        className="relative h-dvh w-full"
+        style={{ maxWidth: 'min(430px, 56.25dvh)' }}
+      >
       {/* Pull-to-refresh / refresh indicator */}
       {(pulling || refreshing) && (
         <div
@@ -233,6 +238,7 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
 
       {/* Bottom navigation */}
       <BottomNav active={active} />
+      </div> {/* /sisäkolumni */}
     </div>
   )
 }
