@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@keyframes bounce-down {
+  0%, 100% { transform: translateY(0);   opacity: inherit; }
+  50%       { transform: translateY(7px); opacity: inherit; }
+}
+
 /* ── ugcsuomi.fi design tokens ─────────────────────────────────────────────── */
 /* Source: Elementor kit #757 + container element #793fda2c                     */
 

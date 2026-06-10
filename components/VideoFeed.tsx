@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import type { Profile } from '@/lib/types'
 import VideoCard from './VideoCard'
 import BottomNav from './BottomNav'
+import PromoCard from './PromoCard'
 import { createClient } from '@/lib/supabase/client'
 
 const PAGE_SIZE = 8
@@ -213,6 +214,9 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
 
       {/* Feed */}
       <div ref={containerRef} className="feed-container">
+        {/* Ensimmäinen kortti — CTA */}
+        <PromoCard />
+
         {profiles.map((profile, index) => (
           <div
             key={profile.id}
