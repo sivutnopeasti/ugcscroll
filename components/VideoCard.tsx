@@ -94,76 +94,106 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
         </button>
       </div>
 
-      {/* Bottom profile info — click to expand bio */}
-      <button
-        className="absolute bottom-0 left-0 right-14 px-4 pt-16 text-left"
-        style={{ zIndex: 10, paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}
-        onClick={() => setBioExpanded((v) => !v)}
-        aria-label={bioExpanded ? 'Sulje kuvaus' : 'Avaa kuvaus'}
+      {/* Bottom profile info */}
+      <div
+        className="absolute bottom-0 left-0 right-14 px-4"
+        style={{
+          zIndex: 10,
+          // Jätä tilaa: alanavigaatio (64px) + progress bar (~46px) + safe area
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 114px)',
+        }}
       >
-        {/* Premium badge */}
-        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full mb-2"
-          style={{ background: 'rgba(244,123,138,0.9)', backdropFilter: 'blur(4px)' }}>
-          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <span className="text-white text-xs font-semibold">Premium UGC</span>
-        </div>
-
-        {/* Name — clickable to profile */}
-        <Link
-          href={`/profile/${profile.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="block"
-        >
-          <h2 className="text-white font-bold text-xl leading-tight hover:underline" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
-            {profile.name}
-            {profile.age && (
-              <span className="font-normal text-white/80 text-lg ml-1">{profile.age}</span>
-            )}
-          </h2>
-        </Link>
-
-        {profile.city && (
-          <div className="flex items-center gap-1 mt-0.5">
-            <svg className="w-3.5 h-3.5 text-white/70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span className="text-white/80 text-sm" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
-              {profile.city}
-            </span>
-          </div>
-        )}
-
-        {profile.bio && (
+        {/* Laajennettu bio — scrollattava paneeli bio-tekstille */}
+        {bioExpanded && profile.bio && (
           <div
-            className="text-white/90 text-sm mt-2 transition-all duration-300"
-            style={{
-              textShadow: '0 1px 3px rgba(0,0,0,0.6)',
-              overflow: bioExpanded ? 'visible' : 'hidden',
-              display: bioExpanded ? 'block' : '-webkit-box',
-              WebkitBoxOrient: 'vertical',
-              WebkitLineClamp: bioExpanded ? 'unset' : 2,
-            } as React.CSSProperties}
+            className="mb-3 rounded-2xl overflow-hidden"
+            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {bioExpanded
-              ? profile.bio.split('\n').map((line, i) => (
-                  <span key={i}>
-                    {line}
-                    {i < profile.bio!.split('\n').length - 1 && <br />}
-                  </span>
-                ))
-              : profile.bio}
+            <div
+              className="overflow-y-auto px-4 py-3 text-white/95 text-sm leading-relaxed"
+              style={{
+                maxHeight: '38dvh',
+                textShadow: '0 1px 2px rgba(0,0,0,0.4)',
+                WebkitOverflowScrolling: 'touch',
+              }}
+            >
+              {profile.bio.split('\n').map((line, i, arr) => (
+                <span key={i}>
+                  {line}
+                  {i < arr.length - 1 && <br />}
+                </span>
+              ))}
+            </div>
+            <button
+              onClick={() => setBioExpanded(false)}
+              className="w-full py-2 text-white/60 text-xs border-t flex items-center justify-center gap-1"
+              style={{ borderColor: 'rgba(255,255,255,0.12)' }}
+            >
+              ▲ Sulje
+            </button>
           </div>
         )}
 
-        {profile.bio && profile.bio.length > 80 && (
-          <span className="text-white/50 text-xs mt-1 block">
-            {bioExpanded ? '▲ Sulje' : '▼ Lue lisää'}
-          </span>
-        )}
-      </button>
+        {/* Staattinen info: badge + nimi + kaupunki + lyhyt bio */}
+        <div>
+          {/* Premium badge */}
+          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full mb-2"
+            style={{ background: 'rgba(244,123,138,0.9)', backdropFilter: 'blur(4px)' }}>
+            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="text-white text-xs font-semibold">Premium UGC</span>
+          </div>
+
+          {/* Nimi */}
+          <Link href={`/profile/${profile.id}`} className="block">
+            <h2 className="text-white font-bold text-xl leading-tight hover:underline"
+              style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+              {profile.name}
+              {profile.age && (
+                <span className="font-normal text-white/80 text-lg ml-1">{profile.age}</span>
+              )}
+            </h2>
+          </Link>
+
+          {/* Kaupunki */}
+          {profile.city && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <svg className="w-3.5 h-3.5 text-white/70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-white/80 text-sm" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+                {profile.city}
+              </span>
+            </div>
+          )}
+
+          {/* Bio-esikatselu (2 riviä) + "Lue lisää" -nappi */}
+          {profile.bio && !bioExpanded && (
+            <button
+              className="text-left w-full mt-1.5"
+              onClick={() => setBioExpanded(true)}
+              aria-label="Avaa kuvaus"
+            >
+              <p className="text-white/90 text-sm"
+                style={{
+                  textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 2,
+                  overflow: 'hidden',
+                } as React.CSSProperties}>
+                {profile.bio}
+              </p>
+              {profile.bio.length > 60 && (
+                <span className="text-white/50 text-xs mt-0.5 block">▼ Lue lisää</span>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
 
       {contactOpen && (
         <ContactModal profile={profile} onClose={() => setContactOpen(false)} />
