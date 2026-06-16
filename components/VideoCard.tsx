@@ -44,7 +44,7 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
 
   return (
     <div className="video-snap-card">
-      <VideoPlayer videoUrl={videoUrl} shouldPlay={isActive && !paused} muted={globalMuted} />
+      <VideoPlayer videoUrl={videoUrl} shouldPlay={isActive && !paused} muted={globalMuted} isActive={isActive} />
 
       {/* Gradient overlay */}
       <div className="video-overlay" style={{ zIndex: 2 }} />

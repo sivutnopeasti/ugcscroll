@@ -7,9 +7,10 @@ interface VideoPlayerProps {
   videoUrl: string
   shouldPlay: boolean
   muted: boolean
+  isActive: boolean  // true = tämä video on näkyvissä, false = scrollattu pois → nollaa
 }
 
-export default function VideoPlayer({ videoUrl, shouldPlay, muted }: VideoPlayerProps) {
+export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const hlsRef  = useRef<Hls | null>(null)
   const [progress, setProgress]   = useState(0)      // 0–1
@@ -51,7 +52,7 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted }: VideoPlayer
     }
   }, [videoUrl])
 
-  // ── Play / pause + restart alusta kun scrollaa pois ────────────────────
+  // ── Play / pause ─────────────────────────────────────────────────────
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -59,11 +60,20 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted }: VideoPlayer
       video.play().catch(() => {})
     } else {
       video.pause()
-      video.currentTime = 0   // ← palaa alkuun
-      setProgress(0)
-      setCurrentTime(0)
     }
   }, [shouldPlay])
+
+  // ── Nollaa alusta vain kun video vaihtuu (isActive → false) ───────────
+  useEffect(() => {
+    if (!isActive) {
+      const video = videoRef.current
+      if (video) {
+        video.currentTime = 0
+        setProgress(0)
+        setCurrentTime(0)
+      }
+    }
+  }, [isActive])
 
   // ── Muted ──────────────────────────────────────────────────────────────
   useEffect(() => {
