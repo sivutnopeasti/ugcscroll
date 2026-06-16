@@ -1,19 +1,24 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import Hls from 'hls.js'
 
 interface VideoPlayerProps {
-  videoUrl: string   // HLS .m3u8 URL or legacy Supabase direct MP4 URL
+  videoUrl: string
   shouldPlay: boolean
   muted: boolean
 }
 
 export default function VideoPlayer({ videoUrl, shouldPlay, muted }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const hlsRef = useRef<Hls | null>(null)
+  const hlsRef  = useRef<Hls | null>(null)
+  const [progress, setProgress]   = useState(0)      // 0–1
+  const [duration, setDuration]   = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
+  const seekBarRef = useRef<HTMLDivElement>(null)
+  const isSeeking  = useRef(false)
 
-  // Set up source — handle HLS vs direct MP4
+  // ── Set up HLS / direct source ─────────────────────────────────────────
   useEffect(() => {
     const video = videoRef.current
     if (!video || !videoUrl) return
@@ -22,22 +27,13 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted }: VideoPlayer
 
     if (isHls) {
       if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Safari: native HLS support
         video.src = videoUrl
       } else if (Hls.isSupported()) {
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: false,
-
-          // Aloita 4 Mbps arvauksella → hls.js valitsee 1080p heti eikä rampaa
-          // ylös hitaasti 360p:stä. Laskee automaattisesti jos verkko ei riitä.
           abrEwmaDefaultEstimate: 4_000_000,
           abrMaxWithRealBitrate: true,
-
-          // EI capLevelToPlayerSize — elementti voi olla kapea (9:16 pöytäkoneella)
-          // mutta video pitää silti toistaa korkeimmalla saatavilla olevalla laadulla.
-
-          // Bufferoi koko 60 s video kerralla → sujuva toisto ilman keskeytyksiä
           maxBufferLength: 60,
           maxMaxBufferLength: 60,
           backBufferLength: 60,
@@ -47,19 +43,15 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted }: VideoPlayer
         hlsRef.current = hls
       }
     } else {
-      // Legacy: direct MP4 from Supabase Storage
       video.src = videoUrl
     }
 
     return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy()
-        hlsRef.current = null
-      }
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
     }
   }, [videoUrl])
 
-  // Play/pause
+  // ── Play / pause + restart alusta kun scrollaa pois ────────────────────
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -67,24 +59,143 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted }: VideoPlayer
       video.play().catch(() => {})
     } else {
       video.pause()
+      video.currentTime = 0   // ← palaa alkuun
+      setProgress(0)
+      setCurrentTime(0)
     }
   }, [shouldPlay])
 
-  // Muted — must be set via DOM (React muted prop is broken)
+  // ── Muted ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const video = videoRef.current
     if (video) video.muted = muted
   }, [muted])
 
+  // ── Progress tracking ──────────────────────────────────────────────────
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const onTimeUpdate = () => {
+      if (isSeeking.current) return
+      const d = video.duration || 0
+      const c = video.currentTime
+      setCurrentTime(c)
+      setDuration(d)
+      setProgress(d > 0 ? c / d : 0)
+    }
+    const onLoadedMeta = () => setDuration(video.duration || 0)
+
+    video.addEventListener('timeupdate', onTimeUpdate)
+    video.addEventListener('loadedmetadata', onLoadedMeta)
+    return () => {
+      video.removeEventListener('timeupdate', onTimeUpdate)
+      video.removeEventListener('loadedmetadata', onLoadedMeta)
+    }
+  }, [])
+
+  // ── Seek helpers ───────────────────────────────────────────────────────
+  const seekTo = useCallback((clientX: number) => {
+    const bar = seekBarRef.current
+    const video = videoRef.current
+    if (!bar || !video || !duration) return
+    const rect = bar.getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    video.currentTime = ratio * duration
+    setProgress(ratio)
+    setCurrentTime(ratio * duration)
+  }, [duration])
+
+  const handleSeekStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    e.stopPropagation()
+    isSeeking.current = true
+    const x = 'touches' in e ? e.touches[0].clientX : e.clientX
+    seekTo(x)
+  }, [seekTo])
+
+  const handleSeekMove = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    if (!isSeeking.current) return
+    e.stopPropagation()
+    const x = 'touches' in e ? e.touches[0].clientX : e.clientX
+    seekTo(x)
+  }, [seekTo])
+
+  const handleSeekEnd = useCallback(() => {
+    isSeeking.current = false
+  }, [])
+
+  // Aika-apufunktio mm:ss
+  const fmt = (s: number) => {
+    const m = Math.floor(s / 60)
+    const sec = Math.floor(s % 60)
+    return `${m}:${sec.toString().padStart(2, '0')}`
+  }
+
   return (
-    <video
-      ref={videoRef}
-      className="video-fill"
-      loop
-      muted
-      playsInline
-      preload="metadata"
-      x-webkit-airplay="allow"
-    />
+    <>
+      <video
+        ref={videoRef}
+        className="video-fill"
+        loop
+        muted
+        playsInline
+        preload="metadata"
+        x-webkit-airplay="allow"
+      />
+
+      {/* ── Progress bar ─────────────────────────────────────────────── */}
+      {duration > 0 && (
+        <div
+          className="absolute left-0 right-0"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 64px)', zIndex: 15 }}
+        >
+          {/* Aika-teksti */}
+          <div className="flex justify-between px-3 mb-1 pointer-events-none">
+            <span className="text-white/70 text-xs" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+              {fmt(currentTime)}
+            </span>
+            <span className="text-white/50 text-xs" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+              {fmt(duration)}
+            </span>
+          </div>
+
+          {/* Seek-palkki — iso kosketusalue, ohut visuaalinen track */}
+          <div
+            ref={seekBarRef}
+            className="relative mx-3 cursor-pointer"
+            style={{ height: 20, display: 'flex', alignItems: 'center' }}
+            onMouseDown={handleSeekStart}
+            onMouseMove={handleSeekMove}
+            onMouseUp={handleSeekEnd}
+            onMouseLeave={handleSeekEnd}
+            onTouchStart={handleSeekStart}
+            onTouchMove={handleSeekMove}
+            onTouchEnd={handleSeekEnd}
+          >
+            {/* Track */}
+            <div className="w-full rounded-full overflow-hidden" style={{ height: 3, background: 'rgba(255,255,255,0.25)' }}>
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${progress * 100}%`,
+                  background: 'linear-gradient(90deg, #F496A5, #fff)',
+                  transition: isSeeking.current ? 'none' : 'width 0.1s linear',
+                }}
+              />
+            </div>
+            {/* Peukalo */}
+            <div
+              className="absolute rounded-full bg-white"
+              style={{
+                width: 12, height: 12,
+                left: `calc(${progress * 100}% - 6px)`,
+                top: '50%', transform: 'translateY(-50%)',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </>
   )
 }

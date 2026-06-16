@@ -137,18 +137,25 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
         )}
 
         {profile.bio && (
-          <p
+          <div
             className="text-white/90 text-sm mt-2 transition-all duration-300"
             style={{
               textShadow: '0 1px 3px rgba(0,0,0,0.6)',
-              display: '-webkit-box',
+              overflow: bioExpanded ? 'visible' : 'hidden',
+              display: bioExpanded ? 'block' : '-webkit-box',
               WebkitBoxOrient: 'vertical',
               WebkitLineClamp: bioExpanded ? 'unset' : 2,
-              overflow: bioExpanded ? 'visible' : 'hidden',
-            }}
+            } as React.CSSProperties}
           >
-            {profile.bio}
-          </p>
+            {bioExpanded
+              ? profile.bio.split('\n').map((line, i) => (
+                  <span key={i}>
+                    {line}
+                    {i < profile.bio!.split('\n').length - 1 && <br />}
+                  </span>
+                ))
+              : profile.bio}
+          </div>
         )}
 
         {profile.bio && profile.bio.length > 80 && (

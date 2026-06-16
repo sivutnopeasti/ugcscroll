@@ -28,7 +28,7 @@ interface VideoFeedProps {
 export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }: VideoFeedProps) {
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles)
   const [activeIndex, setActiveIndex] = useState(0)
-  const [globalMuted, setGlobalMuted] = useState(true)
+  const [globalMuted, setGlobalMuted] = useState(false)
   const [hasMore, setHasMore] = useState(initialProfiles.length === PAGE_SIZE)
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
