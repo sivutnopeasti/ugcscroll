@@ -110,14 +110,19 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
             style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="overflow-y-auto px-4 py-3 text-white/95 text-sm leading-relaxed"
-              style={{
-                maxHeight: '38dvh',
-                textShadow: '0 1px 2px rgba(0,0,0,0.4)',
-                WebkitOverflowScrolling: 'touch',
-              }}
-            >
+          <div
+            className="overflow-y-auto px-4 py-3 text-white/95 text-sm leading-relaxed"
+            style={{
+              maxHeight: '38dvh',
+              textShadow: '0 1px 2px rgba(0,0,0,0.4)',
+              WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-y',
+              overscrollBehavior: 'contain',
+            }}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+          >
               {profile.bio.split('\n').map((line, i, arr) => (
                 <span key={i}>
                   {line}
