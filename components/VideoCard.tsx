@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import type { Profile } from '@/lib/types'
 import LikeButton from './LikeButton'
 import ContactModal from './ContactModal'
@@ -15,36 +15,70 @@ interface VideoCardProps {
   onMuteToggle: () => void
 }
 
-// Handle both Cloudflare Stream UIDs and legacy Supabase Storage URLs
 function resolveVideoUrl(videoId: string): string {
-  if (videoId.startsWith('https://')) return videoId   // legacy Supabase URL
-  return getHlsUrl(videoId)                             // CF Stream HLS
+  if (videoId.startsWith('https://')) return videoId
+  return getHlsUrl(videoId)
 }
 
 export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle }: VideoCardProps) {
   const [contactOpen, setContactOpen] = useState(false)
   const [bioExpanded, setBioExpanded] = useState(false)
+  const [paused, setPaused] = useState(false)
+  const [tapIcon, setTapIcon] = useState<'play' | 'pause' | null>(null)
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const videoUrl = resolveVideoUrl(profile.cloudflare_video_id!)
 
+  // Kun video ei ole enää aktiivinen, nollaa paussitila
   useEffect(() => {
-    if (!isActive) setBioExpanded(false)
+    if (!isActive) { setBioExpanded(false); setPaused(false) }
   }, [isActive])
+
+  // Napauta ruutua → pause/play kuten TikTokissa
+  const handleTap = useCallback(() => {
+    const next = !paused
+    setPaused(next)
+    setTapIcon(next ? 'pause' : 'play')
+    if (tapTimer.current) clearTimeout(tapTimer.current)
+    tapTimer.current = setTimeout(() => setTapIcon(null), 700)
+  }, [paused])
 
   return (
     <div className="video-snap-card">
-      {/* HLS VideoPlayer handles play/pause and muted state internally */}
-      <VideoPlayer videoUrl={videoUrl} shouldPlay={isActive} muted={globalMuted} />
+      <VideoPlayer videoUrl={videoUrl} shouldPlay={isActive && !paused} muted={globalMuted} />
 
       {/* Gradient overlay */}
       <div className="video-overlay" style={{ zIndex: 2 }} />
 
-      {/* Tap center area to toggle mute */}
+      {/* Napauta → pause/play */}
       <button
-        onClick={onMuteToggle}
+        onClick={handleTap}
         className="absolute inset-0 w-full"
         style={{ zIndex: 3, background: 'transparent', bottom: '35%' }}
-        aria-label={globalMuted ? 'Poista mykistys' : 'Mykistä'}
+        aria-label={paused ? 'Jatka toistoa' : 'Paussaa'}
       />
+
+      {/* TikTok-tyylinen isoikoni flash */}
+      {tapIcon && (
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          style={{ zIndex: 8 }}
+        >
+          <div
+            className="w-20 h-20 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
+            style={{ animation: 'tap-flash 0.7s ease-out forwards' }}
+          >
+            {tapIcon === 'pause' ? (
+              <svg className="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+              </svg>
+            ) : (
+              <svg className="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Right-side action buttons */}
       <div
