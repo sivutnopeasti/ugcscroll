@@ -26,6 +26,7 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
   const [paused, setPaused] = useState(false)
   const [tapIcon, setTapIcon] = useState<'play' | 'pause' | null>(null)
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchStart = useRef<{ x: number; y: number } | null>(null)
   const videoUrl = resolveVideoUrl(profile.cloudflare_video_id!)
 
   // Kun video ei ole enää aktiivinen, nollaa paussitila
@@ -42,6 +43,22 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
     tapTimer.current = setTimeout(() => setTapIcon(null), 700)
   }, [paused])
 
+  // Erottele napautus ja scrollaus: vain lyhyt liike (<12 px) = napautus
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }, [])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStart.current) return
+    const dx = Math.abs(e.changedTouches[0].clientX - touchStart.current.x)
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStart.current.y)
+    touchStart.current = null
+    if (dx < 12 && dy < 12) {
+      e.preventDefault() // estää selaimen synteettisen click-tapahtuman
+      handleTap()
+    }
+  }, [handleTap])
+
   return (
     <div className="video-snap-card">
       <VideoPlayer videoUrl={videoUrl} shouldPlay={isActive && !paused} muted={globalMuted} isActive={isActive} />
@@ -49,9 +66,11 @@ export default function VideoCard({ profile, isActive, globalMuted, onMuteToggle
       {/* Gradient overlay */}
       <div className="video-overlay" style={{ zIndex: 2 }} />
 
-      {/* Napauta → pause/play */}
+      {/* Napauta → pause/play (touch: tarkista ettei ole scroll) */}
       <button
-        onClick={handleTap}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onClick={handleTap}   // desktop-tuki
         className="absolute inset-0 w-full"
         style={{ zIndex: 3, background: 'transparent', bottom: '35%' }}
         aria-label={paused ? 'Jatka toistoa' : 'Paussaa'}
