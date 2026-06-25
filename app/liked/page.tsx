@@ -105,47 +105,50 @@ function ScrollPlayer({
 
   return (
     <div
-      className="relative h-dvh bg-black"
+      className="h-dvh bg-black flex justify-center"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Takaisin-nuoli */}
-      <button
-        onClick={onBack}
-        className="absolute top-0 left-0 z-30 flex items-center gap-1.5 px-4 py-3 focus:outline-none"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
-        aria-label="Takaisin ruudukkoon"
-      >
-        <div className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/20">
-          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </div>
-      </button>
+      <div className="relative h-dvh w-full" style={{ maxWidth: 'min(430px, 56.25dvh)' }}>
 
-      {/* Otsikko */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex justify-center pointer-events-none"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}>
-        <span className="text-white font-bold text-base" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-          Tykätyt
-        </span>
-      </div>
-
-      {/* Videot */}
-      <div ref={containerRef} className="feed-container">
-        {profiles.map((profile, index) => (
-          <div key={profile.id} ref={(el) => { cardRefs.current[index] = el }}>
-            <VideoCard
-              profile={profile}
-              isActive={index === activeIndex}
-              globalMuted={globalMuted}
-              onMuteToggle={() => setGlobalMuted((m) => !m)}
-            />
+        {/* Takaisin-nuoli */}
+        <button
+          onClick={onBack}
+          className="absolute top-0 left-0 z-30 flex items-center gap-1.5 px-4 py-3 focus:outline-none"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+          aria-label="Takaisin ruudukkoon"
+        >
+          <div className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/20">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </div>
-        ))}
-      </div>
+        </button>
 
-      <BottomNav active="liked" />
+        {/* Otsikko */}
+        <div className="absolute top-0 left-0 right-0 z-20 flex justify-center pointer-events-none"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}>
+          <span className="text-white font-bold text-base" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+            Tykätyt
+          </span>
+        </div>
+
+        {/* Videot */}
+        <div ref={containerRef} className="feed-container">
+          {profiles.map((profile, index) => (
+            <div key={profile.id} ref={(el) => { cardRefs.current[index] = el }}>
+              <VideoCard
+                profile={profile}
+                isActive={index === activeIndex}
+                globalMuted={globalMuted}
+                onMuteToggle={() => setGlobalMuted((m) => !m)}
+              />
+            </div>
+          ))}
+        </div>
+
+        <BottomNav active="liked" />
+      </div>
     </div>
   )
 }
@@ -175,9 +178,12 @@ export default function LikedPage() {
   // Lataustilas
   if (profiles === null) {
     return (
-      <div className="h-dvh flex items-center justify-center bg-black">
-        <div className="w-8 h-8 rounded-full border-2 border-white/20 animate-spin"
-          style={{ borderTopColor: '#F496A5' }} />
+      <div className="h-dvh bg-black flex justify-center">
+        <div className="relative h-dvh w-full flex items-center justify-center"
+          style={{ maxWidth: 'min(430px, 56.25dvh)' }}>
+          <div className="w-8 h-8 rounded-full border-2 border-white/20 animate-spin"
+            style={{ borderTopColor: '#F496A5' }} />
+        </div>
       </div>
     )
   }
@@ -185,22 +191,25 @@ export default function LikedPage() {
   // Tyhjä tila
   if (profiles.length === 0) {
     return (
-      <div className="relative h-dvh flex flex-col items-center justify-center bg-black gap-4">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(244,150,165,0.1)', border: '1px solid rgba(244,150,165,0.3)' }}>
-          <svg className="w-8 h-8" style={{ color: '#F496A5' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
+      <div className="h-dvh bg-black flex justify-center">
+        <div className="relative h-dvh w-full flex flex-col items-center justify-center gap-4"
+          style={{ maxWidth: 'min(430px, 56.25dvh)' }}>
+          <div className="w-16 h-16 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(244,150,165,0.1)', border: '1px solid rgba(244,150,165,0.3)' }}>
+            <svg className="w-8 h-8" style={{ color: '#F496A5' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </div>
+          <div className="text-center px-8">
+            <p className="text-white/50 text-sm mb-4">Et ole vielä tykännyt yhdestäkään profiilista.</p>
+            <Link href="/" className="inline-block px-6 py-2.5 rounded-full font-semibold text-white text-sm"
+              style={{ background: 'linear-gradient(135deg, #F496A5, #81BFD4)' }}>
+              Selaa profiileja
+            </Link>
+          </div>
+          <BottomNav active="liked" />
         </div>
-        <div className="text-center px-8">
-          <p className="text-white/50 text-sm mb-4">Et ole vielä tykännyt yhdestäkään profiilista.</p>
-          <Link href="/" className="inline-block px-6 py-2.5 rounded-full font-semibold text-white text-sm"
-            style={{ background: 'linear-gradient(135deg, #F496A5, #81BFD4)' }}>
-            Selaa profiileja
-          </Link>
-        </div>
-        <BottomNav active="liked" />
       </div>
     )
   }
@@ -218,30 +227,34 @@ export default function LikedPage() {
 
   // Ruudukkonäkymä
   return (
-    <div className="h-dvh bg-black flex flex-col">
-      {/* Otsikko */}
-      <div className="flex-shrink-0 flex items-center justify-center px-4"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)', paddingBottom: 12 }}>
-        <h1 className="text-white font-bold text-base">Tykätyt</h1>
-      </div>
+    <div className="h-dvh bg-black flex justify-center">
+      <div className="relative h-dvh w-full flex flex-col"
+        style={{ maxWidth: 'min(430px, 56.25dvh)' }}>
 
-      {/* Ruudukko */}
-      <div
-        className="flex-1 overflow-y-auto pb-20"
-        style={{ paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
-      >
-        <div className="grid grid-cols-3 gap-0.5">
-          {profiles.map((profile, index) => (
-            <Thumbnail
-              key={profile.id}
-              profile={profile}
-              onClick={() => openScroll(index)}
-            />
-          ))}
+        {/* Otsikko */}
+        <div className="flex-shrink-0 flex items-center justify-center px-4"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)', paddingBottom: 12 }}>
+          <h1 className="text-white font-bold text-base">Tykätyt</h1>
         </div>
-      </div>
 
-      <BottomNav active="liked" />
+        {/* Ruudukko */}
+        <div
+          className="flex-1 overflow-y-auto"
+          style={{ paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
+        >
+          <div className="grid grid-cols-3 gap-0.5">
+            {profiles.map((profile, index) => (
+              <Thumbnail
+                key={profile.id}
+                profile={profile}
+                onClick={() => openScroll(index)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <BottomNav active="liked" />
+      </div>
     </div>
   )
 }
