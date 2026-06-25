@@ -19,6 +19,10 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
   const seekBarRef = useRef<HTMLDivElement>(null)
   const isSeeking  = useRef(false)
 
+  // Ref joka pitää aina ajan tasalla olevan shouldPlay-arvon asynkronisia callbackeja varten
+  const shouldPlayRef = useRef(shouldPlay)
+  shouldPlayRef.current = shouldPlay
+
   // ── Web Audio normalization ─────────────────────────────────────────────
   const audioCtxRef    = useRef<AudioContext | null>(null)
   const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null)
@@ -29,28 +33,26 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
     try {
       const ctx = audioCtxRef.current ?? new AudioContext()
       audioCtxRef.current = ctx
-      if (ctx.state === 'suspended') ctx.resume()
+      // resume() voi epäonnistua ilman käyttäjägesterä — ei estä videoiden toistoa
+      ctx.resume().catch(() => {})
 
       const source = ctx.createMediaElementSource(video)
       audioSourceRef.current = source
 
-      // Compressor: tuo kovimmat äänet alas ja nostaa hiljaiset ylös
       const compressor = ctx.createDynamicsCompressor()
-      compressor.threshold.value = -24   // dB – aloita puristus
-      compressor.knee.value       =  30  // pehmeä taite
-      compressor.ratio.value      =  12  // 12:1 vahva puristus
+      compressor.threshold.value = -24
+      compressor.knee.value       =  30
+      compressor.ratio.value      =  12
       compressor.attack.value     =   0.003
       compressor.release.value    =   0.25
 
-      // Makeup gain – kompensoi puristuksesta johtuva vaimennos
       const gain = ctx.createGain()
-      gain.gain.value = 1.5   // +~3.5 dB
+      gain.gain.value = 1.5
 
       source.connect(compressor)
       compressor.connect(gain)
       gain.connect(ctx.destination)
     } catch (e) {
-      // Safari tai Firefox voi rajoittaa, ei kriittinen virhe
       console.warn('Web Audio init skipped:', e)
     }
   }, [])
@@ -99,10 +101,10 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
     const video = videoRef.current
     if (!video) return
     if (shouldPlay) {
-      // Kytke Web Audio -normalisointiketju ennen ensimmäistä toistoa
       initAudioNormalization()
-      if (audioCtxRef.current?.state === 'suspended') audioCtxRef.current.resume()
-      video.play().catch(() => {})
+      video.play().catch(() => {
+        // Video ei ole vielä bufferoitunut — canplay-tapahtuma yrittää uudelleen
+      })
     } else {
       video.pause()
     }
@@ -113,6 +115,8 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
     if (!isActive) {
       const video = videoRef.current
       if (video) {
+        // Keskeytä ensin, sitten nollaa — varmistaa ettei pending play jatku
+        video.pause()
         video.currentTime = 0
         setProgress(0)
         setCurrentTime(0)
@@ -194,8 +198,14 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
         loop
         muted
         playsInline
-        preload="metadata"
+        preload="auto"
         x-webkit-airplay="allow"
+        onCanPlay={() => {
+          // Toista heti kun video on valmiina — korjaa tapaukset joissa play() kutsuttiin liian aikaisin
+          if (shouldPlayRef.current) {
+            videoRef.current?.play().catch(() => {})
+          }
+        }}
       />
 
       {/* ── Progress bar ─────────────────────────────────────────────── */}
