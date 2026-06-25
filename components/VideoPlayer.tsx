@@ -19,6 +19,42 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
   const seekBarRef = useRef<HTMLDivElement>(null)
   const isSeeking  = useRef(false)
 
+  // ── Web Audio normalization ─────────────────────────────────────────────
+  const audioCtxRef    = useRef<AudioContext | null>(null)
+  const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null)
+
+  const initAudioNormalization = useCallback(() => {
+    const video = videoRef.current
+    if (!video || audioSourceRef.current) return   // already wired up
+    try {
+      const ctx = audioCtxRef.current ?? new AudioContext()
+      audioCtxRef.current = ctx
+      if (ctx.state === 'suspended') ctx.resume()
+
+      const source = ctx.createMediaElementSource(video)
+      audioSourceRef.current = source
+
+      // Compressor: tuo kovimmat äänet alas ja nostaa hiljaiset ylös
+      const compressor = ctx.createDynamicsCompressor()
+      compressor.threshold.value = -24   // dB – aloita puristus
+      compressor.knee.value       =  30  // pehmeä taite
+      compressor.ratio.value      =  12  // 12:1 vahva puristus
+      compressor.attack.value     =   0.003
+      compressor.release.value    =   0.25
+
+      // Makeup gain – kompensoi puristuksesta johtuva vaimennos
+      const gain = ctx.createGain()
+      gain.gain.value = 1.5   // +~3.5 dB
+
+      source.connect(compressor)
+      compressor.connect(gain)
+      gain.connect(ctx.destination)
+    } catch (e) {
+      // Safari tai Firefox voi rajoittaa, ei kriittinen virhe
+      console.warn('Web Audio init skipped:', e)
+    }
+  }, [])
+
   // ── Set up HLS / direct source ─────────────────────────────────────────
   useEffect(() => {
     const video = videoRef.current
@@ -49,6 +85,12 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
 
     return () => {
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
+      // Sulje AudioContext kun komponentti unmountataan
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close()
+        audioCtxRef.current = null
+        audioSourceRef.current = null
+      }
     }
   }, [videoUrl])
 
@@ -57,11 +99,14 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
     const video = videoRef.current
     if (!video) return
     if (shouldPlay) {
+      // Kytke Web Audio -normalisointiketju ennen ensimmäistä toistoa
+      initAudioNormalization()
+      if (audioCtxRef.current?.state === 'suspended') audioCtxRef.current.resume()
       video.play().catch(() => {})
     } else {
       video.pause()
     }
-  }, [shouldPlay])
+  }, [shouldPlay, initAudioNormalization])
 
   // ── Nollaa alusta vain kun video vaihtuu (isActive → false) ───────────
   useEffect(() => {
