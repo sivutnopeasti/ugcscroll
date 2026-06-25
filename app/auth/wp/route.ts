@@ -9,10 +9,9 @@ import { createClient as createSupabaseAdmin } from '@supabase/supabase-js'
 
 export async function GET(req: NextRequest) {
   const origin = req.nextUrl.origin
-  const loginUrl = new URL('/creator/login', origin)
 
   const token = req.nextUrl.searchParams.get('token')
-  if (!token) return NextResponse.redirect(loginUrl)
+  if (!token) return NextResponse.redirect(new URL('/', origin))
 
   const secret = process.env.WP_JWT_SECRET
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -20,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   if (!secret || !supabaseUrl || !serviceKey) {
     console.error('SSO: missing env vars')
-    return NextResponse.redirect(loginUrl)
+    return NextResponse.redirect(new URL('/', origin))
   }
 
   try {
@@ -108,7 +107,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(callbackUrl)
   } catch (err) {
     console.error('WP SSO error:', err instanceof Error ? err.message : err)
-    loginUrl.searchParams.set('error', 'sso_failed')
-    return NextResponse.redirect(loginUrl)
+    return NextResponse.redirect(new URL('/', origin))
   }
 }

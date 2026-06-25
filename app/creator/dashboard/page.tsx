@@ -30,7 +30,7 @@ export default function CreatorDashboard() {
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/creator/login'); return }
+      if (!user) { router.push('/'); return }
 
       const { data } = await supabase
         .from('profiles')
