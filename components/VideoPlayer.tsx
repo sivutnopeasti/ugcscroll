@@ -7,79 +7,54 @@ interface VideoPlayerProps {
   videoUrl: string
   shouldPlay: boolean
   muted: boolean
-  isActive: boolean  // true = tämä video on näkyvissä, false = scrollattu pois → nollaa
+  isActive: boolean
 }
 
 export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: VideoPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const hlsRef  = useRef<Hls | null>(null)
-  const [progress, setProgress]   = useState(0)      // 0–1
-  const [duration, setDuration]   = useState(0)
-  const [currentTime, setCurrentTime] = useState(0)
-  const seekBarRef = useRef<HTMLDivElement>(null)
-  const isSeeking  = useRef(false)
+  const videoRef    = useRef<HTMLVideoElement>(null)
+  const hlsRef      = useRef<Hls | null>(null)
+  const isHlsJsRef  = useRef(false)           // onko HLS.js käytössä (ei native)
+  const isActiveRef = useRef(isActive)         // aina ajan tasalla, ei closure-ongelma
+  isActiveRef.current = isActive
 
-  // Ref joka pitää aina ajan tasalla olevan shouldPlay-arvon asynkronisia callbackeja varten
+  const [progress, setProgress]       = useState(0)
+  const [duration, setDuration]       = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
+  const seekBarRef   = useRef<HTMLDivElement>(null)
+  const isSeeking    = useRef(false)
   const shouldPlayRef = useRef(shouldPlay)
   shouldPlayRef.current = shouldPlay
 
-  // ── Web Audio normalization ─────────────────────────────────────────────
-  const audioCtxRef    = useRef<AudioContext | null>(null)
-  const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null)
-
-  const initAudioNormalization = useCallback(() => {
-    const video = videoRef.current
-    if (!video || audioSourceRef.current) return   // already wired up
-    try {
-      const ctx = audioCtxRef.current ?? new AudioContext()
-      audioCtxRef.current = ctx
-      // resume() voi epäonnistua ilman käyttäjägesterä — ei estä videoiden toistoa
-      ctx.resume().catch(() => {})
-
-      const source = ctx.createMediaElementSource(video)
-      audioSourceRef.current = source
-
-      const compressor = ctx.createDynamicsCompressor()
-      compressor.threshold.value = -24
-      compressor.knee.value       =  30
-      compressor.ratio.value      =  12
-      compressor.attack.value     =   0.003
-      compressor.release.value    =   0.25
-
-      const gain = ctx.createGain()
-      gain.gain.value = 1.5
-
-      source.connect(compressor)
-      compressor.connect(gain)
-      gain.connect(ctx.destination)
-    } catch (e) {
-      console.warn('Web Audio init skipped:', e)
-    }
-  }, [])
-
-  // ── Set up HLS / direct source ─────────────────────────────────────────
+  // ── HLS / direct-source setup ──────────────────────────────────────────────
   useEffect(() => {
     const video = videoRef.current
     if (!video || !videoUrl) return
 
+    isHlsJsRef.current = false
     const isHls = videoUrl.includes('.m3u8') || videoUrl.includes('videodelivery.net')
 
     if (isHls) {
       if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS (Safari/iOS) — ladataan vain metadata kunnes video on aktiivinen
+        video.preload = isActiveRef.current ? 'auto' : 'metadata'
         video.src = videoUrl
       } else if (Hls.isSupported()) {
         const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: false,
+          enableWorker:          true,
+          lowLatencyMode:        false,
+          autoStartLoad:         false,       // ← ei ladata segmenttejä ennen startLoad()
           abrEwmaDefaultEstimate: 4_000_000,
           abrMaxWithRealBitrate: true,
-          maxBufferLength: 60,
-          maxMaxBufferLength: 60,
-          backBufferLength: 60,
+          maxBufferLength:       30,          // ← ennen 60 — liian aggressiivinen
+          maxMaxBufferLength:    60,
+          backBufferLength:      10,
         })
-        hls.loadSource(videoUrl)
+        hls.loadSource(videoUrl)             // hakee manifestin (pieni)
         hls.attachMedia(video)
-        hlsRef.current = hls
+        hlsRef.current    = hls
+        isHlsJsRef.current = true
+        // Aloita segmenttilataus heti jos video on jo aktiivinen
+        if (isActiveRef.current) hls.startLoad(-1)
       }
     } else {
       video.src = videoUrl
@@ -87,35 +62,27 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
 
     return () => {
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
-      // Sulje AudioContext kun komponentti unmountataan
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close()
-        audioCtxRef.current = null
-        audioSourceRef.current = null
-      }
     }
   }, [videoUrl])
 
-  // ── Play / pause ─────────────────────────────────────────────────────
+  // ── Hallitse lataus ja nollaus isActive-muutoksella ────────────────────────
   useEffect(() => {
     const video = videoRef.current
-    if (!video) return
-    if (shouldPlay) {
-      initAudioNormalization()
-      video.play().catch(() => {
-        // Video ei ole vielä bufferoitunut — canplay-tapahtuma yrittää uudelleen
-      })
+    if (isActive) {
+      // Käynnistä segmenttilataus
+      if (isHlsJsRef.current && hlsRef.current) {
+        hlsRef.current.startLoad(-1)
+      } else if (video && !isHlsJsRef.current) {
+        // Native HLS: vaihda preload auto-tilaan
+        video.preload = 'auto'
+      }
     } else {
-      video.pause()
-    }
-  }, [shouldPlay, initAudioNormalization])
-
-  // ── Nollaa alusta vain kun video vaihtuu (isActive → false) ───────────
-  useEffect(() => {
-    if (!isActive) {
-      const video = videoRef.current
+      // Pysäytä segmenttilataus — vapautetaan kaistaa aktiiviselle videolle
+      if (isHlsJsRef.current && hlsRef.current) {
+        hlsRef.current.stopLoad()
+      }
+      // Nollaa toisto ja ajastin
       if (video) {
-        // Keskeytä ensin, sitten nollaa — varmistaa ettei pending play jatku
         video.pause()
         video.currentTime = 0
         setProgress(0)
@@ -124,17 +91,33 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
     }
   }, [isActive])
 
-  // ── Muted ──────────────────────────────────────────────────────────────
+  // ── Play / pause ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    if (shouldPlay) {
+      // Varmista että lataus on käynnissä
+      if (isHlsJsRef.current && hlsRef.current) {
+        hlsRef.current.startLoad(-1)
+      }
+      video.play().catch(() => {
+        // canPlay-handler yrittää uudelleen kun video on valmiina
+      })
+    } else {
+      video.pause()
+    }
+  }, [shouldPlay])
+
+  // ── Muted ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const video = videoRef.current
     if (video) video.muted = muted
   }, [muted])
 
-  // ── Progress tracking ──────────────────────────────────────────────────
+  // ── Progress tracking ──────────────────────────────────────────────────────
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
-
     const onTimeUpdate = () => {
       if (isSeeking.current) return
       const d = video.duration || 0
@@ -144,7 +127,6 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
       setProgress(d > 0 ? c / d : 0)
     }
     const onLoadedMeta = () => setDuration(video.duration || 0)
-
     video.addEventListener('timeupdate', onTimeUpdate)
     video.addEventListener('loadedmetadata', onLoadedMeta)
     return () => {
@@ -153,12 +135,12 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
     }
   }, [])
 
-  // ── Seek helpers ───────────────────────────────────────────────────────
+  // ── Seek helpers ───────────────────────────────────────────────────────────
   const seekTo = useCallback((clientX: number) => {
-    const bar = seekBarRef.current
+    const bar   = seekBarRef.current
     const video = videoRef.current
     if (!bar || !video || !duration) return
-    const rect = bar.getBoundingClientRect()
+    const rect  = bar.getBoundingClientRect()
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
     video.currentTime = ratio * duration
     setProgress(ratio)
@@ -168,24 +150,19 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
   const handleSeekStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     e.stopPropagation()
     isSeeking.current = true
-    const x = 'touches' in e ? e.touches[0].clientX : e.clientX
-    seekTo(x)
+    seekTo('touches' in e ? e.touches[0].clientX : e.clientX)
   }, [seekTo])
 
   const handleSeekMove = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     if (!isSeeking.current) return
     e.stopPropagation()
-    const x = 'touches' in e ? e.touches[0].clientX : e.clientX
-    seekTo(x)
+    seekTo('touches' in e ? e.touches[0].clientX : e.clientX)
   }, [seekTo])
 
-  const handleSeekEnd = useCallback(() => {
-    isSeeking.current = false
-  }, [])
+  const handleSeekEnd = useCallback(() => { isSeeking.current = false }, [])
 
-  // Aika-apufunktio mm:ss
   const fmt = (s: number) => {
-    const m = Math.floor(s / 60)
+    const m   = Math.floor(s / 60)
     const sec = Math.floor(s % 60)
     return `${m}:${sec.toString().padStart(2, '0')}`
   }
@@ -198,23 +175,22 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
         loop
         muted
         playsInline
-        preload="auto"
+        preload="metadata"
         x-webkit-airplay="allow"
         onCanPlay={() => {
-          // Toista heti kun video on valmiina — korjaa tapaukset joissa play() kutsuttiin liian aikaisin
+          // Retry autoplay kun video on bufferoitunut tarpeeksi
           if (shouldPlayRef.current) {
             videoRef.current?.play().catch(() => {})
           }
         }}
       />
 
-      {/* ── Progress bar ─────────────────────────────────────────────── */}
+      {/* ── Progress bar ───────────────────────────────────────────────────── */}
       {duration > 0 && (
         <div
           className="absolute left-0 right-0"
           style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 64px)', zIndex: 15 }}
         >
-          {/* Aika-teksti */}
           <div className="flex justify-between px-3 mb-1 pointer-events-none">
             <span className="text-white/70 text-xs" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
               {fmt(currentTime)}
@@ -224,7 +200,6 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
             </span>
           </div>
 
-          {/* Seek-palkki — iso kosketusalue, ohut visuaalinen track */}
           <div
             ref={seekBarRef}
             className="relative mx-3 cursor-pointer"
@@ -237,7 +212,6 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
             onTouchMove={handleSeekMove}
             onTouchEnd={handleSeekEnd}
           >
-            {/* Track */}
             <div className="w-full rounded-full overflow-hidden" style={{ height: 3, background: 'rgba(255,255,255,0.25)' }}>
               <div
                 className="h-full rounded-full"
@@ -248,7 +222,6 @@ export default function VideoPlayer({ videoUrl, shouldPlay, muted, isActive }: V
                 }}
               />
             </div>
-            {/* Peukalo */}
             <div
               className="absolute rounded-full bg-white"
               style={{

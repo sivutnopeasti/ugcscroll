@@ -27,14 +27,15 @@ interface VideoFeedProps {
 
 export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }: VideoFeedProps) {
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles)
-  const [activeIndex, setActiveIndex] = useState(0)
+  const [activeIndex, setActiveIndex] = useState(-1)   // -1 = PromoCard näkyvissä, ei video aktiivisena
   const [globalMuted, setGlobalMuted] = useState(false)
   const [hasMore, setHasMore] = useState(initialProfiles.length === PAGE_SIZE)
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [pulling, setPulling] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([])
+  const cardRefs     = useRef<(HTMLDivElement | null)[]>([])
+  const promoRef     = useRef<HTMLDivElement | null>(null)   // PromoCard seuranta
   const touchStartY = useRef<number | null>(null)
   const supabase = createClient()
 
@@ -54,7 +55,7 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
         const fresh = shuffle(data as Profile[])
         setProfiles(fresh.slice(0, PAGE_SIZE))
         setHasMore(fresh.length > PAGE_SIZE)
-        setActiveIndex(0)
+        setActiveIndex(-1)
         containerRef.current?.scrollTo({ top: 0, behavior: 'instant' })
       }
     } finally {
@@ -90,18 +91,21 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const index = cardRefs.current.findIndex((ref) => ref === entry.target)
-            if (index !== -1) setActiveIndex(index)
+          if (!entry.isIntersecting) return
+          // PromoCard näkyvissä → ei yhtään videota aktiivisena
+          if (entry.target === promoRef.current) {
+            setActiveIndex(-1)
+            return
           }
+          const index = cardRefs.current.findIndex((ref) => ref === entry.target)
+          if (index !== -1) setActiveIndex(index)
         })
       },
       { root: container, threshold: 0.6 }
     )
 
-    cardRefs.current.forEach((ref) => {
-      if (ref) observer.observe(ref)
-    })
+    if (promoRef.current) observer.observe(promoRef.current)
+    cardRefs.current.forEach((ref) => { if (ref) observer.observe(ref) })
 
     return () => observer.disconnect()
   }, [profiles.length])
@@ -191,8 +195,10 @@ export default function VideoFeed({ initialProfiles, hideLogo, active = 'feed' }
 
       {/* Feed */}
       <div ref={containerRef} className="feed-container">
-        {/* Ensimmäinen kortti — CTA */}
-        <PromoCard />
+        {/* Ensimmäinen kortti — CTA (seurataan IntersectionObserverilla) */}
+        <div ref={promoRef}>
+          <PromoCard />
+        </div>
 
         {profiles.map((profile, index) => (
           <div
